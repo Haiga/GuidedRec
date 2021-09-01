@@ -55,3 +55,6 @@ Rashed, Ahmed, Josif Grabocka, and Lars Schmidt-Thieme. "A Guided Learning Appro
 * python GraphRecTFRank.py  0 45 "\'neural_sort_cross_entropy_loss\'"
 
 ## Note: All scripts require a gpu. Please change the device <DEVICE = "/gpu:0"> to cpu if you have no gpu
+
+
+https://github.com/ahmedrashed-ml/GraphRec/blob/master/GraphRec.py
