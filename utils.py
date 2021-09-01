@@ -7,6 +7,7 @@ def getMaxColumnFile(file, column):
 
 print(getMaxColumnFile('Output/neural_sort_cross_entropy_default/log.txt', 'NDCG10'))
 print(getMaxColumnFile('Output/neural_sort_cross_entropy_multdrop/logmultipledrop.txt', 'NDCG10'))
+print(getMaxColumnFile('Output/guided_rec_until_200/log.txt', 'NDCG10'))
 print("--")
 print(getMaxColumnFile('Output/neural_sort_cross_entropy_default/log.txt', 'NDCG5'))
 print(getMaxColumnFile('Output/neural_sort_cross_entropy_multdrop/logmultipledrop.txt', 'NDCG5'))
