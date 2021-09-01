@@ -1,11 +1,15 @@
 import os
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import logging
+
 logging.getLogger('tensorflow').disabled = True
 import warnings
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 import tensorflow.compat.v1 as tf
+
 tf.logging.set_verbosity(tf.logging.ERROR)
 
 tf.disable_v2_behavior()
@@ -81,15 +85,26 @@ def inferenceDense(phase, ufsize, ifsize, user_batch, item_batch, time_batch, id
 
         ul1mf = tf.layers.dense(inputs=user_batch, units=20, name='ul1mf', activation=tf.nn.crelu,
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))
+        drops_u = []
+        for i in range(3):
+            drops_u.append(tf.layers.dropout(ul1mf, rate=0.1, training=phase))
         il1mf = tf.layers.dense(inputs=item_batch, units=20, name='il1mf', activation=tf.nn.crelu,
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))
-        InferInputMF = tf.multiply(ul1mf, il1mf)
+        drops_i = []
+        for i in range(3):
+            drops_i.append(tf.layers.dropout(il1mf, rate=0.1, training=phase))
 
-        infer = tf.reduce_sum(InferInputMF, 1, name="inference")
+        # InferInputMF = tf.multiply(ul1mf, il1mf)
+        # infer = tf.reduce_sum(InferInputMF, 1, name="inference")
+        infers = []
+        for i in range(3):
+            InferInputMF = tf.multiply(drops_u[i], drops_i[i])
+            infers.append(tf.reduce_sum(InferInputMF, 1, name="inference"))
 
         regularizer = tf.reduce_sum(
             tf.add(UReg * tf.nn.l2_loss(ul1mf), IReg * tf.nn.l2_loss(il1mf), name="regularizer"))
-    return infer, infer, infer, infer, regularizer
+    # return infer, infer, infer, infer, regularizer
+    return infers, regularizer
 
 
 def optNDCG(NDCGscore, varlist, learning_rate=0.00003, reg=0.1, device="/cpu:0"):
@@ -115,12 +130,18 @@ def optimization(infer, regularizer, rate_batch, learning_rate=0.00003, reg=0.1,
     return cost, train_op
 
 
-def optimizationRank(infer, regularizer, rate_batch, learning_rate=0.00003, reg=0.1, device="/cpu:0"):
+def optimizationRank(infers, regularizer, rate_batch, learning_rate=0.00003, reg=0.1, device="/cpu:0"):
     with tf.device(device):
         losfun = tfr.losses.make_loss_fn(LOSSFUN)
         rate_batch = tf.dtypes.cast(rate_batch, tf.float32)
-        infer = tf.dtypes.cast(infer, tf.float32)
-        cost = losfun(tf.reshape(rate_batch, [25, 10]), tf.reshape(infer, [25, 10]), None)
+        regularizer = tf.dtypes.cast(regularizer, tf.float32)
+        cost = regularizer
+        for infer in infers:
+            cast_infer = tf.dtypes.cast(infer, tf.float32)
+            cost_drop = losfun(tf.reshape(rate_batch, [25, 10]), tf.reshape(cast_infer, [25, 10]), None)
+            cost = tf.add(cost, cost_drop)
+
+        # cost = losfun(tf.reshape(rate_batch, [25, 10]), tf.reshape(infer, [25, 10]), None)
         train_op = tf.train.AdamOptimizer(learning_rate).minimize(cost)
 
     return cost, train_op
@@ -316,81 +337,13 @@ def Main(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0
     w_user = tf.constant(UserFeatures, name="userids", shape=[USER_NUM, UserFeatures.shape[1]], dtype=tf.float64)
     w_item = tf.constant(ItemFeatures, name="itemids", shape=[ITEM_NUM, ItemFeatures.shape[1]], dtype=tf.float64)
 
-    infer, infern, inferSig, varlist, regularizer = inferenceDense(phase, UserFeatures.shape[1], ItemFeatures.shape[1],
-                                                                   user_batch, item_batch, time_batch, w_user, w_item,
-                                                                   ureg, ireg, user_num=USER_NUM, item_num=ITEM_NUM,
-                                                                   dim=DIM,
-                                                                   device=DEVICE)
+    infers, regularizer = inferenceDense(phase, UserFeatures.shape[1], ItemFeatures.shape[1],
+                                         user_batch, item_batch, time_batch, w_user, w_item,
+                                         ureg, ireg, user_num=USER_NUM, item_num=ITEM_NUM,
+                                         dim=DIM,
+                                         device=DEVICE)
 
-    infernStopped = tf.stop_gradient(infern)
-
-    Infere2d = tf.reshape(infer, [25, 10])
-    rate2d = tf.reshape(rate_batch, [25, 10])
-    NDCG2d = tf.concat([Infere2d, rate2d], 1)
-
-    Infere3d = tf.reshape(infer, [25, 10, 1])
-    rate3d = tf.reshape(rate_batch, [25, 10, 1])
-    NDCG3d = tf.concat([Infere3d, rate3d], 2)
-
-    Infere2dn = tf.reshape(infernStopped, [25, 10])
-    NDCG2dn = tf.concat([Infere2dn, rate2d], 1)
-
-    Infere3dn = tf.reshape(infernStopped, [25, 10, 1])
-    NDCG3dn = tf.concat([Infere3dn, rate3d], 2)
-
-    ####################################################
-    with tf.variable_scope("Surrogate"):
-        l11 = tf.layers.dense(inputs=NDCG2dn, units=20, activation=tf.nn.tanh,
-                              kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l11")
-        l11 = tf.layers.dropout(l11, rate=0.0, training=phase)
-        l12 = tf.layers.dense(inputs=l11, units=20, activation=tf.nn.tanh,
-                              kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l12")
-        # l12=tf.layers.dropout(l12,rate=0.1,training=phase)
-        ##
-        b21 = tf.reshape(NDCG3dn, [-1, 2])
-        l21 = tf.layers.dense(inputs=b21, units=20, activation=tf.nn.tanh,
-                              kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l21")
-        # l21=tf.layers.dropout(l21,rate=0.1,training=phase)
-        b22 = tf.reshape(l21, [-1, 10, 20])
-        b22 = tf.map_fn(my_elementwise_func, b22)
-        b23 = tf.reduce_mean(b22, axis=1)
-        l22 = tf.layers.dense(inputs=b23, units=20, activation=tf.nn.tanh,
-                              kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l22")
-        l31 = tf.multiply(l22, l12)
-        ##
-        l4 = tf.layers.dense(inputs=l31, units=8, activation=tf.nn.tanh,
-                             kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l4")
-        l4 = tf.layers.dropout(l4, rate=0.0, training=phase)
-        NDCGScore = tf.layers.dense(inputs=l4, units=1, activation=tf.nn.tanh,
-                                    kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="NDCGScore")
-        #################
-        l11n = tf.layers.dense(inputs=NDCG2d, units=20, reuse=True, trainable=False, activation=tf.nn.tanh,
-                               kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l11")
-        l12n = tf.layers.dense(inputs=l11n, units=20, reuse=True, trainable=False, activation=tf.nn.tanh,
-                               kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l12")
-        ##
-        b21n = tf.reshape(NDCG3d, [-1, 2])
-        l21n = tf.layers.dense(inputs=b21n, units=20, reuse=True, trainable=False, activation=tf.nn.tanh,
-                               kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l21")
-        b22n = tf.reshape(l21n, [-1, 10, 20])
-        b22n = tf.map_fn(my_elementwise_func, b22n)
-        b23n = tf.reduce_mean(b22n, axis=1)
-        l22n = tf.layers.dense(inputs=b23n, units=20, reuse=True, trainable=False, activation=tf.nn.tanh,
-                               kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l22")
-        l31n = tf.multiply(l22n, l12n)
-        ##
-        l4n = tf.layers.dense(inputs=l31n, units=8, reuse=True, trainable=False, activation=tf.nn.tanh,
-                              kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l4")
-        NDCGScoren = tf.layers.dense(inputs=l4n, units=1, reuse=True, trainable=False, activation=tf.nn.tanh,
-                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="NDCGScore")
-
-    ####################################################
-    # NDCGScore=NDCGModel(NDCG2d,NDCG3d,modelphase)
-    print(NDCGScore)
-    # global_step = tf.contrib.framework.get_or_create_global_step()
-    cost, train_op = optimizationRank(inferSig, regularizer, rate_batch, learning_rate=lr, reg=0.09, device=DEVICE)
-    train_NDCG = optNDCG(NDCGScoren, varlist, device=DEVICE)
-    train_Loss, loss_cost = optLoss(NDCGScore, ndcgTargets, device=DEVICE)
+    cost, train_op = optimizationRank(infers, regularizer, rate_batch, learning_rate=lr, reg=0.09, device=DEVICE)
 
     init_op = tf.global_variables_initializer()
     config = tf.ConfigProto()
@@ -418,63 +371,20 @@ def Main(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0
             users, items, rates = GetTrainSample(dictUsers, BATCH_SIZE, 10)
             ################################
 
-            if (SURROGATE):
-                if ((i // samples_per_batch) < 0):
-                    _, pred_batch, cst = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
-                                                                                      item_batch: items,
-                                                                                      rate_batch: rates,
-                                                                                      phase: True})
-                    inf2d, rt2d = sess.run([Infere2d, rate2d], feed_dict={user_batch: users,
-                                                                          item_batch: items,
-                                                                          rate_batch: rates,
-                                                                          phase: True,
-                                                                          modelphase: True})
-
-                    totndcg = np.asarray([ndcg_score(x, y, k=10) for x, y in zip(rt2d.tolist(), inf2d.tolist())])
-                    _, lscost = sess.run([train_Loss, loss_cost], feed_dict={user_batch: users,
-                                                                             item_batch: items,
-                                                                             rate_batch: rates,
-                                                                             ndcgTargets: totndcg.reshape((-1, 1)),
-                                                                             phase: True,
-                                                                             modelphase: True})
-
-                    losscost.append(lscost)
-                    truecost.append(totndcg)
-                else:
-                    _, pred_batch, cst = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
-                                                                                      item_batch: items,
-                                                                                      rate_batch: rates,
-                                                                                      phase: True})
-                    inf2d, rt2d = sess.run([Infere2d, rate2d], feed_dict={user_batch: users,
-                                                                          item_batch: items,
-                                                                          rate_batch: rates,
-                                                                          phase: True,
-                                                                          modelphase: True})
-
-                    totndcg = np.asarray([ndcg_score(x, y, k=10) for x, y in zip(rt2d.tolist(), inf2d.tolist())])
-                    _, lscost = sess.run([train_Loss, loss_cost], feed_dict={user_batch: users,
-                                                                             item_batch: items,
-                                                                             rate_batch: rates,
-                                                                             ndcgTargets: totndcg.reshape((-1, 1)),
-                                                                             phase: True,
-                                                                             modelphase: True})
-
-                    losscost.append(lscost)
-                    truecost.append(totndcg)
-                    #############################train_NDCG,
-                    _, pred_batch, cst = sess.run([train_NDCG, infer, NDCGScore], feed_dict={user_batch: users,
-                                                                                             item_batch: items,
-                                                                                             rate_batch: rates,
-                                                                                             phase: True,
-                                                                                             modelphase: False})
-                    errors.append(cst)
-                # print(pred_batch)
-            else:
+            if True:
                 ################################
-                _, pred_batch, cst = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
-                                                                                  item_batch: items,
-                                                                                  rate_batch: rates,
-                                                                                  phase: True})
+                runner_nodes = [train_op]
+                for infer in infers:
+                    runner_nodes.append(infer)
+                runner_nodes.append(cost)
+
+                # _, pred_batch, cst = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
+                rtn = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
+                                                                   item_batch: items,
+                                                                   rate_batch: rates,
+                                                                   phase: True})
+                pred_batch = rtn[1]
+                cst = rtn[-1]
                 losscost.append(0)
                 errors.append(0)
                 truecost.append(0)
@@ -552,7 +462,7 @@ def Main(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0
                 textTrain_file.flush()
 
         textTrain_file.close()
-    #TODO
+    # TODO
     # degreelist, predlist = zip(*sorted(zip(degreelist, predlist)))
     return
 
