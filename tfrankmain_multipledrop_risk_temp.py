@@ -77,6 +77,7 @@ def LocalEval(list_of_args):
     # df_train = load_data(data_path + "RankData.dat")
     df_train = None
     overall_infos = load_data(f"prepared_data/{dataset}/dataset_infos.dat")
+    print(overall_infos)
     USER_NUM = overall_infos["USER_NUM"]
     ITEM_NUM = overall_infos["ITEM_NUM"]
     INTERACTIONS_TRAIN_NUM = overall_infos["INTERACTIONS_TRAIN_NUM"]
@@ -162,11 +163,10 @@ def LocalEval(list_of_args):
 
             if local_losfun == "":
                 losfun = tfr.losses.make_loss_fn(LOSSFUN)
-
                 for infer in infers:
                     cast_infer = tf.dtypes.cast(infer, tf.float32)
-                    cost_drop, _ = losfun(tf.reshape(rate_batch, [25, 10]), tf.reshape(cast_infer, [25, 10]), None)
-                    cost = tf.add(cost, tf.reduce_sum(cost_drop))
+                    cost_drop = losfun(tf.reshape(rate_batch, [25, 10]), tf.reshape(cast_infer, [25, 10]), None)
+                    cost = tf.add(cost, cost_drop)
             else:
                 mat = []
                 for infer in infers:
@@ -607,3 +607,22 @@ def LocalEval(list_of_args):
     with open(output_path + "configs-fim.txt", "w") as fo:
         for name, value in zip(parameters_names.replace(" ", "").split(","), parameters):
             fo.write(name + ":" + str(value)+"\n")
+
+if __name__ == '__main__':
+    num_baseline_dropouts = 1
+    local_losfun = ""
+    add_l2_reg_on_risk = True
+    add_loss_on_risk = True
+    alpha_risk = 2
+    do_diff_to_ideal_risk = True
+    eval_ideal_risk = False
+    dataset = "ml100k"
+    LR = 0.001
+    LOSSFUN = "neural_sort_cross_entropy_loss"
+    id = 999
+    list_of_args = [num_baseline_dropouts, local_losfun, add_l2_reg_on_risk,
+                    add_loss_on_risk,
+                    alpha_risk,
+                    do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, LOSSFUN, id]
+
+    LocalEval(list_of_args)
