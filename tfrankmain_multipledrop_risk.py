@@ -31,6 +31,7 @@ tf.logging.set_verbosity(tf.logging.ERROR)
 tf.disable_v2_behavior()
 tf.reset_default_graph()
 
+
 def inferenceDense(phase, ufsize, ifsize, user_batch, item_batch, time_batch, idx_user, idx_item, ureg, ireg, user_num,
                    item_num, dim=5, UReg=0.0, IReg=0.0, device="/cpu:0"):
     with tf.device(device):
@@ -210,7 +211,7 @@ def getNDCG(ranklist, gtItem):
     return 0
 
 
-def getNDCG_SIM(ranklist, gtItem, Sim):#TODO ndcg com similarity??, seira algo tipo novelty or other
+def getNDCG_SIM(ranklist, gtItem, Sim):  # TODO ndcg com similarity??, seira algo tipo novelty or other
     NewTestItem = -1
     ItemFeatRow = ITEMDATA[np.asarray([gtItem], dtype=np.int32), :]
     RankedFeatRows = ITEMDATA[np.asarray(ranklist, dtype=np.int32), :]
@@ -254,7 +255,7 @@ def Main(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0
         for index, row in train.iterrows():
             userid = int(row['user'])
             itemid = int(row['item'])
-            AdjacencyUsers[userid][itemid] = row['rate'] / 5.0#TODO se usar essa parte tem que corrigir
+            AdjacencyUsers[userid][itemid] = row['rate'] / 5.0  # TODO se usar essa parte tem que corrigir
             AdjacencyItems[itemid][userid] = row['rate'] / 5.0
             DegreeUsersVec[userid] += 1
             DegreeItemsVec[itemid] += 1
@@ -292,8 +293,11 @@ def Main(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0
         ItemFeatures = np.concatenate((ItemFeatures, ItmDat), axis=1)
 
     # samples_per_batch = len(train) // int(BATCH_SIZE / (NEGSAMPLES + 1))
-    samples_per_batch = sum([len(dictUsers[x][0]) for x in dictUsers.keys()]) // int(BATCH_SIZE / (NEGSAMPLES + 1))
+    # samples_per_batch = sum([len(dictUsers[x][0]) for x in dictUsers.keys()]) // int(BATCH_SIZE / (NEGSAMPLES + 1))
 
+    samples_per_batch = sum(
+        [len(grouped_instances[x]["train_items_with_interaction"]) for x in grouped_instances.keys()]) // int(
+        BATCH_SIZE / (NEGSAMPLES + 1))
 
     user_batch = tf.placeholder(tf.int32, shape=[None], name="id_user")
     item_batch = tf.placeholder(tf.int32, shape=[None], name="id_item")
@@ -332,7 +336,7 @@ def Main(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0
     with tf.Session(config=config) as sess:
         sess.run(init_op)
 
-        print("epoch, train_err,train_err1,train_err2,HitRatio5,HitRatio10,HitRatio20,NDCG5,NDCG10,NDCG20,time")
+        print("epoch,train_err,train_err1,train_err2,HitRatio5,HitRatio10,HitRatio20,NDCG5,NDCG10,NDCG20,time")
         now = datetime.datetime.now()
 
         if local_losfun == "":
@@ -347,11 +351,12 @@ def Main(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0
         errors = deque(maxlen=samples_per_batch)
         losscost = deque(maxlen=samples_per_batch)
         truecost = deque(maxlen=samples_per_batch)
+        best_measure = 0
 
         for i in range(EPOCH_MAX * samples_per_batch):
             start = time.time()
 
-            users, items, rates = GetTrainSample(dictUsers, BATCH_SIZE, 10)
+            users, items, rates = GetTrainSample(grouped_instances, BATCH_SIZE, 10)
 
             runner_nodes = [train_op]
             for infer in infers:
@@ -372,76 +377,31 @@ def Main(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0
             end = time.time()
             elapsed_epoch_time = end - start
             if i % samples_per_batch == 0:
-
                 train_err = np.mean(errors)
                 train_err1 = np.mean(truecost)
                 train_err2 = np.mean(losscost)
-                totalhits = 0
-                ############
-                correcthits10 = 0
-                correcthits20 = 0
-                correcthits5 = 0
-                ndcg10 = 0
-                ndcg20 = 0
-                ndcg5 = 0
-                ndcg10_50 = 0
-                ndcg10_90 = 0
-                ndcg10_80 = 0
-                ndcg10_95 = 0
-                ###########
-                for userid in dictUsers:
-                    items = dictUsers[userid][3]
-                    TestItem = dictUsers[userid][2][0]
-                    TestUser = userid
-                    users = np.repeat(userid, 100)
-                    items = dictUsers[userid][3]
-                    pred_batch = sess.run(infer, feed_dict={user_batch: users,
-                                                            item_batch: items,
-                                                            phase: False})
 
-                    sorteditems = [x for _, x in sorted(zip(pred_batch, items), key=lambda pair: pair[0], reverse=True)]
-                    #######
-                    topitems10 = sorteditems[:5]
-                    correcthits10 = correcthits10 + getHR(sorteditems[:10], TestItem)
-                    correcthits20 = correcthits20 + getHR(sorteditems[:20], TestItem)
-                    correcthits5 = correcthits5 + getHR(sorteditems[:5], TestItem)
+                measures_means, measures_names = call_evaluation_measures(sess, infer, user_batch, item_batch, phase,
+                                                                          role="validation")
 
-                    ndcg10 = ndcg10 + getNDCG(sorteditems[:10], TestItem)
-                    ndcg20 = ndcg20 + getNDCG(sorteditems[:20], TestItem)
-                    ndcg5 = ndcg5 + getNDCG(sorteditems[:5], TestItem)
+                log_str = ""
+                for m in measures_means:
+                    log_str += "{:f},".format(m)
 
-                    ndcg10_50 = ndcg10_50  # +getNDCG_SIM(topitems10,TestItem,0.5)
-                    ndcg10_80 = ndcg10_80  # +getNDCG_SIM(topitems10,TestItem,0.8)
-                    ndcg10_90 = ndcg10_90  # +getNDCG_SIM(topitems10,TestItem,0.9)
-                    ndcg10_95 = ndcg10_95  # +getNDCG_SIM(topitems10,TestItem,0.95)
+                log_line = "{:3d},{:f},{:f},{:f},{:s}{:f}".format(i // samples_per_batch,
+                                                                   train_err,
+                                                                   train_err1, train_err2,
+                                                                   log_str,
+                                                                   elapsed_epoch_time).replace(" ", "")
 
-                    totalhits = totalhits + 1
-                    ############
-                HitRatio10 = correcthits10 / totalhits
-                HitRatio20 = correcthits20 / totalhits
-                HitRatio5 = correcthits5 / totalhits
-                NDCG10 = ndcg10 / totalhits
-                NDCG20 = ndcg20 / totalhits
-                NDCG5 = ndcg5 / totalhits
-
-                NDCG_50 = ndcg10_50 / totalhits
-                NDCG_80 = ndcg10_80 / totalhits
-                NDCG_90 = ndcg10_90 / totalhits
-                NDCG_95 = ndcg10_95 / totalhits
-
-                log_line = "{:3d},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f}".format(i // samples_per_batch,
-                                                                                            train_err,
-                                                                                            train_err1, train_err2,
-                                                                                            HitRatio5,
-                                                                                            HitRatio10, HitRatio20,
-                                                                                            NDCG5,
-                                                                                            NDCG10,
-                                                                                            NDCG20,
-                                                                                            elapsed_epoch_time) \
-                    .replace(" ", "")
                 print(log_line)
                 textTrain_file.write(log_line + '\n')
                 textTrain_file.flush()
+
+                NDCG10 = measures_means[4]
+                if NDCG10 > best_measure:
+                    best_measure = NDCG10
+                    call_evaluation_measures(sess, infer, user_batch, item_batch, phase, role="test", wout=True)
 
         textTrain_file.close()
 
@@ -490,7 +450,7 @@ def GetTrainSampleold(DictUsers, BatchSize=1000, topn=10):
     return trainusers, trainitems, traintargets
 
 
-def GetTrainSample(DictUsers, BatchSize=1000, topn=10):
+def GetTrainSample(grouped_instances, BatchSize=1000, topn=10):
     trainusers = list()
     trainitems = list()
     traintargets = list()
@@ -498,21 +458,63 @@ def GetTrainSample(DictUsers, BatchSize=1000, topn=10):
 
     for i in range(numusers):
         batchusers = random.randint(0, USER_NUM - 1)  ####
-        while len(DictUsers[batchusers][0]) == 0:
-            batchusers = random.choice(list(DictUsers.keys()))  ####
+        # while len(DictUsers[batchusers][0]) == 0:
+        while len(grouped_instances[batchusers]["train_items_with_interaction"]) == 0:
+            # batchusers = random.choice(list(DictUsers.keys()))  ####
+            batchusers = random.choice(list(grouped_instances.keys()))
         trainusers.extend(np.repeat(batchusers, topn))
         ##Pos
 
-        trainitems.extend(np.random.choice(DictUsers[batchusers][0], int(5), replace=True))
+        # trainitems.extend(np.random.choice(DictUsers[batchusers][0], int(5), replace=True))
+        trainitems.extend(
+            np.random.choice(grouped_instances[batchusers]["train_items_with_interaction"], int(5), replace=True))
         traintargets.extend(np.ones(int(5)))
         ##Neg
-        trainitems.extend(np.random.choice(DictUsers[batchusers][1], int(5), replace=True))
+        # trainitems.extend(np.random.choice(DictUsers[batchusers][1], int(5), replace=True))
+        trainitems.extend(
+            np.random.choice(grouped_instances[batchusers]["items_without_interaction"], int(5), replace=True))
         traintargets.extend(np.zeros(int(5)))
 
     trainusers = np.asarray(trainusers)
     trainitems = np.asarray(trainitems)
     traintargets = np.asarray(traintargets)
     return trainusers, trainitems, traintargets
+
+
+def call_evaluation_measures(sess, infer, user_batch, item_batch, phase, role="validation", wout=False):
+    measures_matrix = []
+    metrics = ["getHR", "getNDCG"]
+    list_of_k = [5, 10, 20]
+
+    measures_evalauted_names = []
+    for metric in metrics:
+        for k in list_of_k:
+            measures_evalauted_names.append(metric + str(k))
+
+    for userid in grouped_instances:
+        ListOfItemsToRank = grouped_instances[userid][role + "_item"]
+        users = np.repeat(userid, 100)
+        items = grouped_instances[userid][role + "_with_negative_sample"]
+
+        pred_batch = sess.run(infer, feed_dict={user_batch: users, item_batch: items, phase: False})
+
+        sorteditems = [x for _, x in sorted(zip(pred_batch, items), key=lambda pair: pair[0], reverse=True)]
+
+        line_of_measures = []
+
+        for metric in metrics:
+            for k in list_of_k:
+                metric_for_user_at_k = globals()[metric](sorteditems[:k], ListOfItemsToRank)
+                line_of_measures.append(metric_for_user_at_k)
+
+        measures_matrix.append(line_of_measures)
+
+    if wout:
+        pd.DataFrame(measures_matrix, columns=measures_evalauted_names).to_csv(output_path + "measures_test.txt", index=False)
+
+    mean_measures = np.mean(measures_matrix, axis=0)
+    # return HitRatio5, HitRatio10, HitRatio20, NDCG5, NDCG10, NDCG20
+    return mean_measures, measures_evalauted_names
 
 
 if __name__ == '__main__':
@@ -528,7 +530,7 @@ if __name__ == '__main__':
     SEED = 45
     # LOSSFUN = "neural_sort_cross_entropy_loss"
     LOSSFUN = ""
-    output_path = "./Output/"
+    output_path = "./Output/GumbelApproxNDCGLossLocal1/"
     data_path = "src/Data/"
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -546,8 +548,8 @@ if __name__ == '__main__':
     # ITEMDATA = get_ItemData100k()
     ITEMDATA = None
 
-    dictUsers = load_data(data_path + "UserDict.dat")
-    dictUsers2 = load_data("prepared_data/ml100k/dict_data_preparation.dat")
+    # dictUsers = load_data(data_path + "UserDict.dat")
+    grouped_instances = load_data("prepared_data/ml100k/dict_data_preparation.dat")
     # df_train = load_data(data_path + "RankData.dat")
     df_train = None
 
