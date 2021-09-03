@@ -26,7 +26,7 @@ if __name__ == '__main__':
                                                             do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, id]
                                             all_lists.append(list_of_args)
                                             id += 1
-                                            if id == 4: return all_lists
+                                            # if id == 4: return all_lists
         return all_lists
 
 
