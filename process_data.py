@@ -89,11 +89,12 @@ def data_preparation(ratings_file, ouput_path):
 
 if __name__ == '__main__':
     print("Starting")
-    outdir = 'prepared_data/ml100k/'
-    if not os.path.isdir(outdir):
-        os.makedirs(outdir)
+    for dataset in ['ml100k', 'ml1m']:
+        outdir = f'prepared_data/{dataset}/'
+        if not os.path.isdir(outdir):
+            os.makedirs(outdir)
 
-    s = time.time()
-    data_preparation('src/Data/u.data', outdir)
-    e = time.time()
-    print("elapsed time: %.3fs" % (e - s))
+        s = time.time()
+        data_preparation(f'src/Data/{dataset}/u.data', outdir)
+        e = time.time()
+        print("elapsed time: %.3fs" % (e - s))
