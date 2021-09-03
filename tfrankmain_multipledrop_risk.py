@@ -164,7 +164,7 @@ def LocalEval(list_of_args):
 
                 for infer in infers:
                     cast_infer = tf.dtypes.cast(infer, tf.float32)
-                    cost_drop, _ = losfun(tf.reshape(rate_batch, [25, 10]), tf.reshape(cast_infer, [25, 10]))
+                    cost_drop, _ = losfun(tf.reshape(rate_batch, [25, 10]), tf.reshape(cast_infer, [25, 10]), None)
                     cost = tf.add(cost, tf.reduce_sum(cost_drop))
             else:
                 mat = []
