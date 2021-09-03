@@ -141,3 +141,4 @@ src/Scripts/Output/
 .idea/
 
 local_utils/
+prepared_data/

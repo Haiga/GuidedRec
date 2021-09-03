@@ -2,6 +2,8 @@ import os
 import logging
 import warnings
 
+from process_data import load_data
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 warnings.filterwarnings('ignore')
@@ -28,21 +30,6 @@ from risk_losses import geoRisk
 tf.logging.set_verbosity(tf.logging.ERROR)
 tf.disable_v2_behavior()
 tf.reset_default_graph()
-
-
-def load_data(filename):
-    try:
-        with open(filename, "rb") as f:
-            x = pickle.load(f)
-    except:
-        x = []
-    return x
-
-
-def save_data(data, filename):
-    with open(filename, "wb") as f:
-        pickle.dump(data, f)
-
 
 def inferenceDense(phase, ufsize, ifsize, user_batch, item_batch, time_batch, idx_user, idx_item, ureg, ireg, user_num,
                    item_num, dim=5, UReg=0.0, IReg=0.0, device="/cpu:0"):
@@ -114,7 +101,7 @@ def optimizationRank(infers, regularizer, rate_batch, learning_rate=0.00003, reg
             for infer in infers:
                 cast_infer = tf.dtypes.cast(infer, tf.float32)
                 cost_drop, _ = globals()[local_losfun](tf.reshape(rate_batch, [25, 10]),
-                                                      tf.reshape(cast_infer, [25, 10]))
+                                                       tf.reshape(cast_infer, [25, 10]))
                 cost_drop = cost_drop / tf.reduce_max(cost_drop)
                 mat.append(cost_drop)
 
@@ -223,7 +210,7 @@ def getNDCG(ranklist, gtItem):
     return 0
 
 
-def getNDCG_SIM(ranklist, gtItem, Sim):
+def getNDCG_SIM(ranklist, gtItem, Sim):#TODO ndcg com similarity??, seira algo tipo novelty or other
     NewTestItem = -1
     ItemFeatRow = ITEMDATA[np.asarray([gtItem], dtype=np.int32), :]
     RankedFeatRows = ITEMDATA[np.asarray(ranklist, dtype=np.int32), :]
@@ -267,7 +254,7 @@ def Main(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0
         for index, row in train.iterrows():
             userid = int(row['user'])
             itemid = int(row['item'])
-            AdjacencyUsers[userid][itemid] = row['rate'] / 5.0
+            AdjacencyUsers[userid][itemid] = row['rate'] / 5.0#TODO se usar essa parte tem que corrigir
             AdjacencyItems[itemid][userid] = row['rate'] / 5.0
             DegreeUsersVec[userid] += 1
             DegreeItemsVec[itemid] += 1
@@ -304,7 +291,9 @@ def Main(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0
         ItmDat = get_ItemData100k()
         ItemFeatures = np.concatenate((ItemFeatures, ItmDat), axis=1)
 
-    samples_per_batch = len(train) // int(BATCH_SIZE / (NEGSAMPLES + 1))
+    # samples_per_batch = len(train) // int(BATCH_SIZE / (NEGSAMPLES + 1))
+    samples_per_batch = sum([len(dictUsers[x][0]) for x in dictUsers.keys()]) // int(BATCH_SIZE / (NEGSAMPLES + 1))
+
 
     user_batch = tf.placeholder(tf.int32, shape=[None], name="id_user")
     item_batch = tf.placeholder(tf.int32, shape=[None], name="id_item")
@@ -508,9 +497,9 @@ def GetTrainSample(DictUsers, BatchSize=1000, topn=10):
     numusers = int(BatchSize / (topn))
 
     for i in range(numusers):
-        batchusers = random.randint(0, USER_NUM - 1)
+        batchusers = random.randint(0, USER_NUM - 1)  ####
         while len(DictUsers[batchusers][0]) == 0:
-            batchusers = random.choice(list(DictUsers.keys()))
+            batchusers = random.choice(list(DictUsers.keys()))  ####
         trainusers.extend(np.repeat(batchusers, topn))
         ##Pos
 
@@ -554,10 +543,12 @@ if __name__ == '__main__':
 
     np.random.seed(SEED)
 
-    ITEMDATA = get_ItemData100k()
+    # ITEMDATA = get_ItemData100k()
+    ITEMDATA = None
 
     dictUsers = load_data(data_path + "UserDict.dat")
-    df_train = load_data(data_path + "RankData.dat")
+    # df_train = load_data(data_path + "RankData.dat")
+    df_train = None
 
     print("Starting")
     Main(df_train, ItemData=False, UserData=False, Graph=False, lr=0.001, ureg=0.0, ireg=0.0)
