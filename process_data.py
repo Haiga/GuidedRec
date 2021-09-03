@@ -52,12 +52,12 @@ def data_preparation(ratings_file, ouput_path):
 
         validation_interaction = validation.query("user == " + str(user_ids[i])).to_numpy()
         validation_item = getIndexById(validation_interaction[0, 1])
-        rate_validation_item = getIndexById(validation_interaction[0, 2])
+        rate_validation_item = validation_interaction[0, 2]
         validation_with_negative_sample = np.append(np.random.choice(items_without_interaction, 99), validation_item)
 
         test_interaction = test.query("user == " + str(user_ids[i])).to_numpy()
         test_item = getIndexById(test_interaction[0, 1])
-        rate_test_item = getIndexById(test_interaction[0, 2])
+        rate_test_item = test_interaction[0, 2]
         test_with_negative_sample = np.append(np.random.choice(items_without_interaction, 99), test_item)
 
         dict_data_preparation.setdefault(i, {

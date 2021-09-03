@@ -547,6 +547,7 @@ if __name__ == '__main__':
     ITEMDATA = None
 
     dictUsers = load_data(data_path + "UserDict.dat")
+    dictUsers2 = load_data("prepared_data/ml100k/dict_data_preparation.dat")
     # df_train = load_data(data_path + "RankData.dat")
     df_train = None
 
