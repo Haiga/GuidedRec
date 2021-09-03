@@ -295,9 +295,11 @@ def Main(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0
     # samples_per_batch = len(train) // int(BATCH_SIZE / (NEGSAMPLES + 1))
     # samples_per_batch = sum([len(dictUsers[x][0]) for x in dictUsers.keys()]) // int(BATCH_SIZE / (NEGSAMPLES + 1))
 
-    samples_per_batch = sum(
-        [len(grouped_instances[x]["train_items_with_interaction"]) for x in grouped_instances.keys()]) // int(
-        BATCH_SIZE / (NEGSAMPLES + 1))
+    # samples_per_batch = sum(
+    #     [len(grouped_instances[x]["train_items_with_interaction"]) for x in grouped_instances.keys()]) // int(
+    #     BATCH_SIZE / (NEGSAMPLES + 1))
+
+    samples_per_batch = INTERACTIONS_TRAIN_NUM // int(BATCH_SIZE / (NEGSAMPLES + 1))
 
     user_batch = tf.placeholder(tf.int32, shape=[None], name="id_user")
     item_batch = tf.placeholder(tf.int32, shape=[None], name="id_item")
@@ -389,10 +391,10 @@ def Main(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0
                     log_str += "{:f},".format(m)
 
                 log_line = "{:3d},{:f},{:f},{:f},{:s}{:f}".format(i // samples_per_batch,
-                                                                   train_err,
-                                                                   train_err1, train_err2,
-                                                                   log_str,
-                                                                   elapsed_epoch_time).replace(" ", "")
+                                                                  train_err,
+                                                                  train_err1, train_err2,
+                                                                  log_str,
+                                                                  elapsed_epoch_time).replace(" ", "")
 
                 print(log_line)
                 textTrain_file.write(log_line + '\n')
@@ -510,7 +512,8 @@ def call_evaluation_measures(sess, infer, user_batch, item_batch, phase, role="v
         measures_matrix.append(line_of_measures)
 
     if wout:
-        pd.DataFrame(measures_matrix, columns=measures_evalauted_names).to_csv(output_path + "measures_test.txt", index=False)
+        pd.DataFrame(measures_matrix, columns=measures_evalauted_names).to_csv(output_path + "measures_test.txt",
+                                                                               index=False)
 
     mean_measures = np.mean(measures_matrix, axis=0)
     # return HitRatio5, HitRatio10, HitRatio20, NDCG5, NDCG10, NDCG20
@@ -520,8 +523,6 @@ def call_evaluation_measures(sess, infer, user_batch, item_batch, phase, role="v
 if __name__ == '__main__':
     BATCH_SIZE = 250
     NEGSAMPLES = 1
-    USER_NUM = 943
-    ITEM_NUM = 1682
     DIM = 50
     EPOCH_MAX = 500
     # DEVICE = "/gpu:0"
@@ -536,7 +537,8 @@ if __name__ == '__main__':
         os.makedirs(output_path)
 
     num_baseline_dropouts = 3
-    local_losfun = "GumbelApproxNDCGLossLocal"
+    # local_losfun = "GumbelApproxNDCGLossLocal"
+    local_losfun = "PairwiseLogisticLossLocal"
     add_l2_reg_on_risk = True
     add_loss_on_risk = True
     alpha_risk = 2
@@ -552,6 +554,12 @@ if __name__ == '__main__':
     grouped_instances = load_data("prepared_data/ml100k/dict_data_preparation.dat")
     # df_train = load_data(data_path + "RankData.dat")
     df_train = None
+    overall_infos = load_data("prepared_data/ml100k/dataset_infos.dat")
+    USER_NUM = overall_infos["USER_NUM"]
+    ITEM_NUM = overall_infos["ITEM_NUM"]
+    INTERACTIONS_TRAIN_NUM = overall_infos["INTERACTIONS_TRAIN_NUM"]
+    # USER_NUM = 943
+    # ITEM_NUM = 1682
 
     print("Starting")
     Main(df_train, ItemData=False, UserData=False, Graph=False, lr=0.001, ureg=0.0, ireg=0.0)

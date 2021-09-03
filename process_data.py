@@ -76,8 +76,15 @@ def data_preparation(ratings_file, ouput_path):
             "test_with_negative_sample": test_with_negative_sample,
         })
 
+    overall_infos = {
+        "USER_NUM": USER_NUM,
+        "ITEM_NUM": ITEM_NUM,
+        "INTERACTIONS_TRAIN_NUM": train.shape[0]
+    }
+
     save_data(dict_data_preparation, ouput_path + "dict_data_preparation.dat")
     save_data(id_index_items_map, ouput_path + "id_index_items_map.dat")
+    save_data(overall_infos, ouput_path + "dataset_infos.dat")
 
 
 if __name__ == '__main__':
@@ -89,4 +96,4 @@ if __name__ == '__main__':
     s = time.time()
     data_preparation('src/Data/u.data', outdir)
     e = time.time()
-    print("elapsed time: %.3fs"%(e-s))
+    print("elapsed time: %.3fs" % (e - s))
