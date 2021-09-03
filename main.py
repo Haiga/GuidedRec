@@ -18,7 +18,8 @@ if __name__ == '__main__':
                             for do_diff_to_ideal_risk in [True, False]:
                                 for eval_ideal_risk in [False, True]:
                                     # for dataset in ["ml100k", "ml1m"]:
-                                    for dataset in ["ml100k"]:
+                                    # for dataset in ["ml100k"]:
+                                    for dataset in ["ml1m"]:
                                         for LR in [0.001, 0.0001]:
                                             list_of_args = [num_baseline_dropouts, local_losfun, add_l2_reg_on_risk,
                                                             add_loss_on_risk,
