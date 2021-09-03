@@ -1,5 +1,5 @@
 # from concurrent.futures.thread import ThreadPoolExecutor
-# import multiprocessing
+import multiprocessing
 
 # from tfrankmain_multipledrop_risk import LocalEval
 from tfrankmain_multipledrop_risk_temp import LocalEval
@@ -9,7 +9,7 @@ if __name__ == '__main__':
     def run():
         id = 100
         all_lists = []
-        for LOSSFUN in []:
+        for LOSSFUN in ["neural_sort_cross_entropy_loss", "gumbel_approx_ndcg_loss", "pairwise_logistic_loss", "approx_ndcg_loss", "list_mle_loss"]:
             for num_baseline_dropouts in [1, 3, 5, 10]:
                 for local_losfun in [""]:
                     for add_l2_reg_on_risk in [True]:
@@ -27,17 +27,17 @@ if __name__ == '__main__':
                                                                 do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, LOSSFUN, id]
                                                 all_lists.append(list_of_args)
                                                 id += 1
-                                                LocalEval(all_lists)
+                                                # LocalEval(all_lists)
                                                 # if id == 4: return all_lists
         return all_lists
 
 
     all_lists = run()
-    # with multiprocessing.Pool(processes=2) as pool:
-    #     # a = executor.submit(LocalEval, list_of_args)
-    #     results = pool.map(LocalEval, all_lists)
-    #     for r in results:
-    #         print(r)
+    with multiprocessing.Pool(processes=2) as pool:
+        # a = executor.submit(LocalEval, list_of_args)
+        results = pool.map(LocalEval, all_lists)
+        for r in results:
+            print(r)
     #     # submits.append(a)
     #
     #     # if id == 4: return
