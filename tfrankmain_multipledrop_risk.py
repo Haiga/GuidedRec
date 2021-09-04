@@ -98,7 +98,7 @@ def LocalEval(list_of_args):
 
     with open(output_path + "configs.txt", "w") as fo:
         for name, value in zip(parameters_names.replace(" ", "").split(","), parameters):
-            fo.write(name + ":" + str(value)+"\n")
+            fo.write(name + ":" + str(value) + "\n")
 
     print("Starting")
 
@@ -194,9 +194,11 @@ def LocalEval(list_of_args):
                 mat = tf.transpose(mat)
 
                 if do_diff_to_ideal_risk:
-                    cost = tf.add(geoRisk(mat, alpha_risk) - geoRisk(mat, alpha_risk, i=-1), cost)
+                    # cost = tf.add(geoRisk(mat, alpha_risk) - geoRisk(mat, alpha_risk, i=-1), cost)
+                    cost = tf.add(geoRisk(mat, alpha_risk, i=-1) - geoRisk(mat, alpha_risk), cost)
                 else:
-                    cost = tf.add(geoRisk(mat, alpha_risk), cost)
+                    # cost = tf.add(geoRisk(mat, alpha_risk), cost)
+                    cost = tf.add(-geoRisk(mat, alpha_risk), cost)
 
             train_op = tf.train.AdamOptimizer(learning_rate).minimize(cost)
 
@@ -482,7 +484,7 @@ def LocalEval(list_of_args):
                                                                           log_str,
                                                                           elapsed_epoch_time).replace(" ", "")
 
-                        print("NEW BEST:"+ log_line)
+                        print("NEW BEST:" + log_line)
                         textTest_file.write(
                             "New best at iteration " + str(i // samples_per_batch) + ": " + str(NDCG10) + '\n')
                         textTest_file.write(log_line + '\n')
@@ -605,4 +607,4 @@ def LocalEval(list_of_args):
 
     with open(output_path + "configs-fim.txt", "w") as fo:
         for name, value in zip(parameters_names.replace(" ", "").split(","), parameters):
-            fo.write(name + ":" + str(value)+"\n")
+            fo.write(name + ":" + str(value) + "\n")

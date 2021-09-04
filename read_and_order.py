@@ -9,7 +9,7 @@ for i in os.listdir("Output/"):
     if i.isdigit():
         i = int(i)
 
-    if os.path.isfile(f"Output/{i}/measures_test.txt"):
+    if os.path.isfile(f"Output/{i}/measures_test.csv"):
         df = pd.read_csv(f"Output/{i}/measures_test.txt", sep=",")
         df.columns = ["HR5", "HR10", "HR20", "NDCG5", "NDCG10", "NDCG20"]
         indexes.append(i)
