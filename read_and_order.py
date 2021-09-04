@@ -4,7 +4,7 @@ import numpy as np
 
 indexes = []
 metrics = []
-for i in range(4):
+for i in range(72):
     df = pd.read_csv(f"Output/{i}/measures_test.txt", sep=",")
     df.columns = ["HR5", "HR10", "HR20", "NDCG5", "NDCG10", "NDCG20"]
     indexes.append(i)
