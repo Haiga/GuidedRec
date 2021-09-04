@@ -4,12 +4,17 @@ import numpy as np
 
 indexes = []
 metrics = []
-for i in range(72):
-    df = pd.read_csv(f"Output/{i}/measures_test.txt", sep=",")
-    df.columns = ["HR5", "HR10", "HR20", "NDCG5", "NDCG10", "NDCG20"]
-    indexes.append(i)
-    m = np.mean(df["NDCG10"].values)
-    metrics.append(m)
+
+for i in os.listdir("Output/"):
+    if i.isdigit():
+        i = int(i)
+
+    if os.path.isfile(f"Output/{i}/measures_test.txt"):
+        df = pd.read_csv(f"Output/{i}/measures_test.txt", sep=",")
+        df.columns = ["HR5", "HR10", "HR20", "NDCG5", "NDCG10", "NDCG20"]
+        indexes.append(i)
+        m = np.mean(df["NDCG10"].values)
+        metrics.append(m)
 
 order_indexes = np.argsort(metrics)[::-1]
 
