@@ -4,6 +4,9 @@ import multiprocessing
 # from tfrankmain_multipledrop_risk import LocalEval
 from tfrankmain_multipledrop_risk_temp import LocalEval
 
+#TODO fazer esse tuning com dropout rate == 0 (lá)
+#TODO variar o dropout rate
+#TODO aqui foi usado um tuning do learning rate também 0.0001 (lá não) (pode-se remover ou fazer lá também)
 if __name__ == '__main__':
     # executor = ThreadPoolExecutor(max_workers=2)
     def run():

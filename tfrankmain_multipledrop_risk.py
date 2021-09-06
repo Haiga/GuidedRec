@@ -42,20 +42,22 @@ def LocalEval(list_of_args):
     eval_ideal_risk = list_of_args[6]
     dataset = list_of_args[7]
     LR = list_of_args[8]
+    LOSSFUN = list_of_args[9]
+    drop_rate = list_of_args[10]
 
-    id = list_of_args[9]
+    id = list_of_args[11]
 
     # TODO arrumar parametros deles
     BATCH_SIZE = 250
     NEGSAMPLES = 1
-    DIM = 50
-    EPOCH_MAX = 100
+    DIM = 50#TODO aqui está 50 mas lá está prefixado o 20
+    EPOCH_MAX = 400
     # DEVICE = "/gpu:0"
     DEVICE = "/cpu:0"
 
     SEED = 45
     # LOSSFUN = "neural_sort_cross_entropy_loss"
-    LOSSFUN = ""
+    # LOSSFUN = ""
     ####
     # num_baseline_dropouts = 3
     # local_losfun = "PairwiseLogisticLossLocal"
@@ -84,11 +86,11 @@ def LocalEval(list_of_args):
 
     parameters = [BATCH_SIZE, NEGSAMPLES, DIM, EPOCH_MAX, SEED, LOSSFUN,
                   num_baseline_dropouts, local_losfun, add_l2_reg_on_risk, add_loss_on_risk, alpha_risk,
-                  do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, id]
+                  do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, drop_rate, id]
 
     parameters_names = "BATCH_SIZE, NEGSAMPLES, DIM, EPOCH_MAX, SEED, LOSSFUN,\
                           num_baseline_dropouts, local_losfun, add_l2_reg_on_risk, add_loss_on_risk, alpha_risk,\
-                          do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, id"
+                          do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, drop_rate, id"
 
     output_path = "./Output/{:s}/".format(str(id))
     # data_path = "src/Data/"
@@ -102,6 +104,13 @@ def LocalEval(list_of_args):
 
     print("Starting")
 
+    if os.name == 'nt':
+        os.system("copy \"{}\" \"{}\"".format("tfrankmain_multipledrop_risk.py", output_path + "tfrankmain_multipledrop_risk.py"))
+        os.system("copy \"{}\" \"{}\"".format("tfrankmain_multipledrop_risk_temp.py", output_path + "tfrankmain_multipledrop_risk_temp.py"))
+    else:
+        os.system("cp {} {}".format("tfrankmain_multipledrop_risk.py", output_path + "tfrankmain_multipledrop_risk.py"))
+        os.system("cp {} {}".format("tfrankmain_multipledrop_risk_temp.py", output_path + "tfrankmain_multipledrop_risk_temp.py"))
+
     # Main(df_train, ItemData=False, UserData=False, Graph=False, lr=0.001, ureg=0.0, ireg=0.0)
 
     def inferenceDense(phase, ufsize, ifsize, user_batch, item_batch, time_batch, idx_user, idx_item, ureg, ireg,
@@ -111,16 +120,16 @@ def LocalEval(list_of_args):
             user_batch = tf.nn.embedding_lookup(idx_user, user_batch, name="embedding_user")
             item_batch = tf.nn.embedding_lookup(idx_item, item_batch, name="embedding_item")
 
-            ul1mf = tf.layers.dense(inputs=user_batch, units=20, name='ul1mf', activation=tf.nn.crelu,
+            ul1mf = tf.layers.dense(inputs=user_batch, units=20, name='ul1mf', activation=tf.nn.tanh,
                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01))
             drops_u = []
             for i in range(num_baseline_dropouts):
-                drops_u.append(tf.layers.dropout(ul1mf, rate=0.1, training=phase))
-            il1mf = tf.layers.dense(inputs=item_batch, units=20, name='il1mf', activation=tf.nn.crelu,
+                drops_u.append(tf.layers.dropout(ul1mf, rate=drop_rate, training=phase))
+            il1mf = tf.layers.dense(inputs=item_batch, units=20, name='il1mf', activation=tf.nn.tanh,
                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01))
             drops_i = []
             for i in range(num_baseline_dropouts):
-                drops_i.append(tf.layers.dropout(il1mf, rate=0.1, training=phase))
+                drops_i.append(tf.layers.dropout(il1mf, rate=drop_rate, training=phase))
 
             infers = []
             for i in range(num_baseline_dropouts):
