@@ -11,64 +11,97 @@ warnings.filterwarnings('ignore')
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 logging.getLogger('tensorflow').disabled = True
 
+import numpy as np
+import pandas as pd
 import time
+from collections import deque
+import tensorflow as tf
+from tensorflow.core.framework import summary_pb2
 import random
 import math
 import datetime
-import numpy as np
-import pandas as pd
-from collections import deque
-import pickle
+import os
+from process_data import load_data
+
+# BATCH_SIZE = 250
+# NEGSAMPLES = 1
+# USER_NUM = 943
+# ITEM_NUM = 1682
+# DIM = 50
+# EPOCH_MAX = 1000
+# # DEVICE = "/gpu:0"
+# DEVICE = "/cpu:0"
+# PERC = 0.9
+# SURROGATE = int(sys.argv[1])
+# SEED = int(sys.argv[2])
+
+
+# np.random.seed(SEED)
+# tf.set_random_seed(SEED)
+
+# print('GraphSurrogate', "-", SURROGATE, "-", SEED)
+
+# import pickle
 from sklearn.metrics.pairwise import cosine_similarity
 
-import tensorflow.compat.v1 as tf
-from tensorflow.core.framework import summary_pb2
-import tensorflow_ranking as tfr
-from tfr_losses_local import *
-from risk_losses import geoRisk
 
-tf.logging.set_verbosity(tf.logging.ERROR)
-tf.disable_v2_behavior()
-tf.reset_default_graph()
+# from sklearn.metrics.pairwise import euclidean_distances
+# from sklearn.metrics.pairwise import rbf_kernel
+# from sklearn import preprocessing
+#
+# tf.reset_default_graph()
 
 
 def LocalEval(list_of_args):
-    num_baseline_dropouts = list_of_args[0]
-    local_losfun = list_of_args[1]
-    add_l2_reg_on_risk = list_of_args[2]
-    add_loss_on_risk = list_of_args[3]
-    alpha_risk = list_of_args[4]
-    do_diff_to_ideal_risk = list_of_args[5]
-    eval_ideal_risk = list_of_args[6]
-    dataset = list_of_args[7]
-    LR = list_of_args[8]
-    LOSSFUN = list_of_args[9]
-    drop_rate = list_of_args[10]
+    # num_baseline_dropouts = list_of_args[0]
+    # local_losfun = list_of_args[1]
+    # add_l2_reg_on_risk = list_of_args[2]
+    # add_loss_on_risk = list_of_args[3]
+    # alpha_risk = list_of_args[4]
+    # do_diff_to_ideal_risk = list_of_args[5]
+    # eval_ideal_risk = list_of_args[6]
+    # dataset = list_of_args[7]
+    # LR = list_of_args[8]
+    # LOSSFUN = list_of_args[9]
+    # drop_rate = list_of_args[10]
+    #
+    # id = list_of_args[11]
 
-    id = list_of_args[11]
+    num_baseline_dropouts = 0
+    local_losfun = ""
+    add_l2_reg_on_risk = False
+    add_loss_on_risk = False
+    alpha_risk = 0
+    do_diff_to_ideal_risk = False
+    eval_ideal_risk = False
+    dataset = "ml100k"
+    # LR = ""
+    LOSSFUN = ""
+    drop_rate = 0
 
-    # TODO arrumar parametros deles
+    id = "guidedrec-ml100k"
+
+    WGT_DECAY_LOGLOSS = 0.00001
+    LR_LOGLOSS = 0.001
+
+    WGT_DECAY_SURROGATE = 0.00008
+    LR_SURROGATE = 0.002
+
+    WGT_DECAY_NDCG = 0.000001
+    LR_NDCG = 0.0013
+
     BATCH_SIZE = 250
     NEGSAMPLES = 1
-    DIM = 50#TODO aqui está 50 mas lá está prefixado o 20
-    EPOCH_MAX = 400
+    DIM = 50
+    EPOCH_MAX = 450
+    # EPOCH_MAX = 4
     # DEVICE = "/gpu:0"
     DEVICE = "/cpu:0"
 
     SEED = 45
-    # LOSSFUN = "neural_sort_cross_entropy_loss"
-    # LOSSFUN = ""
-    ####
-    # num_baseline_dropouts = 3
-    # local_losfun = "PairwiseLogisticLossLocal"
-    # add_l2_reg_on_risk = True
-    # add_loss_on_risk = True
-    # alpha_risk = 2
-    # do_diff_to_ideal_risk = True
-    # eval_ideal_risk = True
-    # dataset = "ml100k"
-    ####
-    np.random.seed(SEED)
+    SURROGATE = 1
+
+    tf.set_random_seed(SEED)
 
     # ITEMDATA = get_ItemData100k()
     ITEMDATA = None
@@ -86,11 +119,11 @@ def LocalEval(list_of_args):
 
     parameters = [BATCH_SIZE, NEGSAMPLES, DIM, EPOCH_MAX, SEED, LOSSFUN,
                   num_baseline_dropouts, local_losfun, add_l2_reg_on_risk, add_loss_on_risk, alpha_risk,
-                  do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, drop_rate, id]
+                  do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR_LOGLOSS, drop_rate, id]
 
     parameters_names = "BATCH_SIZE, NEGSAMPLES, DIM, EPOCH_MAX, SEED, LOSSFUN,\
                           num_baseline_dropouts, local_losfun, add_l2_reg_on_risk, add_loss_on_risk, alpha_risk,\
-                          do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, drop_rate, id"
+                          do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR_LOGLOSS, drop_rate, id"
 
     output_path = "./Output/{:s}/".format(str(id))
     # data_path = "src/Data/"
@@ -105,11 +138,14 @@ def LocalEval(list_of_args):
     print("Starting")
 
     if os.name == 'nt':
-        os.system("copy \"{}\" \"{}\"".format("tfrankmain_multipledrop_risk.py", output_path + "tfrankmain_multipledrop_risk.py"))
-        os.system("copy \"{}\" \"{}\"".format("tfrankmain_multipledrop_risk_temp.py", output_path + "tfrankmain_multipledrop_risk_temp.py"))
+        os.system("copy \"{}\" \"{}\"".format("tfrankmain_multipledrop_risk.py",
+                                              output_path + "tfrankmain_multipledrop_risk.py"))
+        os.system("copy \"{}\" \"{}\"".format("tfrankmain_multipledrop_risk_temp.py",
+                                              output_path + "tfrankmain_multipledrop_risk_temp.py"))
     else:
         os.system("cp {} {}".format("tfrankmain_multipledrop_risk.py", output_path + "tfrankmain_multipledrop_risk.py"))
-        os.system("cp {} {}".format("tfrankmain_multipledrop_risk_temp.py", output_path + "tfrankmain_multipledrop_risk_temp.py"))
+        os.system("cp {} {}".format("tfrankmain_multipledrop_risk_temp.py",
+                                    output_path + "tfrankmain_multipledrop_risk_temp.py"))
 
     # Main(df_train, ItemData=False, UserData=False, Graph=False, lr=0.001, ureg=0.0, ireg=0.0)
 
@@ -120,97 +156,52 @@ def LocalEval(list_of_args):
             user_batch = tf.nn.embedding_lookup(idx_user, user_batch, name="embedding_user")
             item_batch = tf.nn.embedding_lookup(idx_item, item_batch, name="embedding_item")
 
-            ul1mf = tf.layers.dense(inputs=user_batch, units=20, name='ul1mf', activation=tf.nn.crelu,
-                                    kernel_initializer=tf.random_normal_initializer(stddev=0.01))
-            drops_u = []
-            for i in range(num_baseline_dropouts):
-                drops_u.append(tf.layers.dropout(ul1mf, rate=drop_rate, training=phase))
-            il1mf = tf.layers.dense(inputs=item_batch, units=20, name='il1mf', activation=tf.nn.crelu,
-                                    kernel_initializer=tf.random_normal_initializer(stddev=0.01))
-            drops_i = []
-            for i in range(num_baseline_dropouts):
-                drops_i.append(tf.layers.dropout(il1mf, rate=drop_rate, training=phase))
+            ul = tf.get_variable('ul', [ufsize, 20], initializer=tf.random_normal_initializer(stddev=0.01),
+                                 dtype=tf.float64)
+            ulb = tf.get_variable('ulb', [1, 20], initializer=tf.constant_initializer(0), dtype=tf.float64)
 
-            infers = []
-            for i in range(num_baseline_dropouts):
-                InferInputMF = tf.multiply(drops_u[i], drops_i[i])
-                infers.append(tf.reduce_sum(InferInputMF, 1, name="inference"))
+            il = tf.get_variable('il', [ifsize, 20], initializer=tf.random_normal_initializer(stddev=0.01),
+                                 dtype=tf.float64)
+            ilb = tf.get_variable('ilb', [1, 20], initializer=tf.constant_initializer(0), dtype=tf.float64)
 
+            outputul1mf = tf.add(tf.matmul(user_batch, ul), ulb)
+            outputil1mf = tf.add(tf.matmul(item_batch, il), ilb)
+
+            ul1mf = tf.nn.crelu(outputul1mf)
+            il1mf = tf.nn.crelu(outputil1mf)
+
+            InferInputMF = tf.multiply(ul1mf, il1mf)
+
+            infer = tf.nn.sigmoid(tf.reduce_sum(InferInputMF, 1, name="inference"))
+            inferSig = tf.reduce_sum(InferInputMF, 1, name="inference")
+            varlist = [ul, ulb, il, ilb]
             regularizer = tf.reduce_sum(
                 tf.add(UReg * tf.nn.l2_loss(ul1mf), IReg * tf.nn.l2_loss(il1mf), name="regularizer"))
+        return infer, infer, inferSig, varlist, regularizer
 
-        return infers, regularizer
-
-    def optNDCG(NDCGscore, varlist, learning_rate=0.00003, reg=0.1, device="/cpu:0"):
+    def optNDCG(NDCGscore, varlist, reg=0.1, device="/cpu:0"):
         with tf.device(device):
             costNDCG = -NDCGscore
-            train_NDCG = tf.train.AdamOptimizer(0.00001).minimize(costNDCG)
+            train_NDCG = tf.contrib.opt.AdamWOptimizer(WGT_DECAY_NDCG, learning_rate=LR_NDCG).minimize(costNDCG,
+                                                                                                       var_list=varlist)
         return train_NDCG
 
-    def optLoss(NDCGscore, NDCGTrue, learning_rate=0.00003, reg=0.1, device="/cpu:0"):
+    def optLoss(NDCGscore, NDCGTrue, reg=0.1, device="/cpu:0"):
         with tf.device(device):
             costLOSS = tf.nn.l2_loss(tf.subtract(NDCGscore, NDCGTrue))
-            train_LOSS = tf.train.AdamOptimizer(0.000015).minimize(costLOSS)
+            train_LOSS = tf.contrib.opt.AdamWOptimizer(WGT_DECAY_SURROGATE, learning_rate=LR_SURROGATE).minimize(
+                costLOSS)
         return train_LOSS, costLOSS
 
-    def optimization(infer, regularizer, rate_batch, learning_rate=0.00003, reg=0.1, device="/cpu:0"):
+    def optimization(infer, regularizer, rate_batch, reg=0.1, device="/cpu:0"):
+        global_step = tf.train.get_global_step()
+        assert global_step is not None
         with tf.device(device):
             cost = tf.nn.sigmoid_cross_entropy_with_logits(labels=rate_batch,
                                                            logits=infer)  # tf.nn.l2_loss(tf.subtract(infer, rate_batch))
-            train_op = tf.train.AdamOptimizer(learning_rate).minimize(cost)
-
-        return cost, train_op
-
-    def optimizationRank(infers, regularizer, rate_batch, learning_rate=0.00003, reg=0.1, device="/cpu:0"):
-        with tf.device(device):
-
-            rate_batch = tf.dtypes.cast(rate_batch, tf.float32)
-            regularizer = tf.dtypes.cast(regularizer, tf.float32)
-            cost = regularizer
-
-            if local_losfun == "":
-                losfun = tfr.losses.make_loss_fn(LOSSFUN)
-
-                for infer in infers:
-                    cast_infer = tf.dtypes.cast(infer, tf.float32)
-                    cost_drop = losfun(tf.reshape(rate_batch, [25, 10]), tf.reshape(cast_infer, [25, 10]), None)
-                    cost = tf.add(cost, cost_drop)
-            else:
-                mat = []
-                for infer in infers:
-                    cast_infer = tf.dtypes.cast(infer, tf.float32)
-                    cost_drop, _ = globals()[local_losfun](tf.reshape(rate_batch, [25, 10]),
-                                                           tf.reshape(cast_infer, [25, 10]))
-                    cost_drop = cost_drop / tf.reduce_max(cost_drop)
-                    mat.append(cost_drop)
-
-                    if add_l2_reg_on_risk:
-                        cost_reg = tf.nn.l2_loss(tf.subtract(cast_infer, rate_batch))
-                        cost = tf.add(cost, cost_reg)
-
-                    if add_loss_on_risk:
-                        cost = tf.add(cost, tf.reduce_sum(cost_drop))
-
-                if eval_ideal_risk:
-                    cc, _ = globals()[local_losfun](tf.reshape(rate_batch, [25, 10]), tf.reshape(rate_batch, [25, 10]))
-                    cc = cc / tf.reduce_max(cc)
-                else:
-                    cc = tf.ones(cost_drop.shape, tf.float32)
-
-                mat.append(cc)
-
-                mat = tf.squeeze(mat)
-                mat = tf.transpose(mat)
-
-                if do_diff_to_ideal_risk:
-                    # cost = tf.add(geoRisk(mat, alpha_risk) - geoRisk(mat, alpha_risk, i=-1), cost)
-                    cost = tf.add(geoRisk(mat, alpha_risk, i=-1) - geoRisk(mat, alpha_risk), cost)
-                else:
-                    # cost = tf.add(geoRisk(mat, alpha_risk), cost)
-                    cost = tf.add(-geoRisk(mat, alpha_risk), cost)
-
-            train_op = tf.train.AdamOptimizer(learning_rate).minimize(cost)
-
+            train_op = tf.contrib.opt.AdamWOptimizer(WGT_DECAY_LOGLOSS, learning_rate=LR_LOGLOSS).minimize(cost,
+                                                                                                           global_step=global_step)
+            # GradientDescentOptimizer
         return cost, train_op
 
     def clip(x):
@@ -230,7 +221,6 @@ def LocalEval(list_of_args):
         else:
             raise ValueError("Invalid gains option.")
 
-        # highest rank is 1 so +2 instead of +1
         discounts = np.log2(np.arange(len(y_true)) + 2)
         return np.sum(gains / discounts)
 
@@ -241,7 +231,7 @@ def LocalEval(list_of_args):
 
     def get_UserData100k():
         col_names = ["user", "age", "gender", "occupation", "PostCode"]
-        df = pd.read_csv(data_path + 'u.user', sep='|', header=None, names=col_names, engine='python')
+        df = pd.read_csv('../Data/u.user', sep='|', header=None, names=col_names, engine='python')
         del df["PostCode"]
         df["user"] -= 1
         df = pd.get_dummies(df, columns=["age", "gender", "occupation"])
@@ -253,7 +243,7 @@ def LocalEval(list_of_args):
             , "unknown", "Action", "Adventure", "Animation", "Childrens", "Comedy", "Crime", "Documentary"
             , "Drama", "Fantasy", "FilmNoir", "Horror", "Musical", "Mystery", "Romance", "SciFi", "Thriller"
             , "War", "Western"]
-        df = pd.read_csv(data_path + 'u.item', sep='|', header=None, names=col_names, engine='python')
+        df = pd.read_csv('../Data/u.item', sep='|', header=None, names=col_names, engine='python')
         df['releasedate'] = pd.to_datetime(df['releasedate'])
         df['year'], df['month'] = zip(*df['releasedate'].map(lambda x: [x.year, x.month]))
         df['year'] -= df['year'].min()
@@ -282,16 +272,18 @@ def LocalEval(list_of_args):
                 return math.log(2) / math.log(i + 2)
         return 0
 
-    def getNDCG_SIM(ranklist, gtItem, Sim):  # TODO ndcg com similarity??, seira algo tipo novelty or other
+    def getNDCG_SIM(ranklist, gtItem, Sim):
+        # print(ranklist)
         NewTestItem = -1
         ItemFeatRow = ITEMDATA[np.asarray([gtItem], dtype=np.int32), :]
         RankedFeatRows = ITEMDATA[np.asarray(ranklist, dtype=np.int32), :]
 
         simvals = cosine_similarity(RankedFeatRows, ItemFeatRow)
         simvals = (simvals + 1) / 2
-
+        # print(simvals)
         simvals[simvals < Sim] = 0.0
 
+        # print(simvals.shape)
         for i in range(len(ranklist)):
             if (simvals[i] > 0.0 and ranklist[i] != gtItem):
                 NewTestItem = ranklist[i]
@@ -308,7 +300,7 @@ def LocalEval(list_of_args):
     def my_elementwise_func(x):
         return tf.matmul(x, tf.transpose(x))
 
-    def Main(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0, ireg=0.0):
+    def GuidedRec(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ureg=0.0, ireg=0.0):
         AdjacencyUsers = [[0 for x in range(ITEM_NUM)] for y in range(USER_NUM)]
         DegreeUsers = [[0 for x in range(1)] for y in range(USER_NUM)]
         DegreeUsersVec = [0 for y in range(USER_NUM)]
@@ -324,7 +316,7 @@ def LocalEval(list_of_args):
             for index, row in train.iterrows():
                 userid = int(row['user'])
                 itemid = int(row['item'])
-                AdjacencyUsers[userid][itemid] = row['rate'] / 5.0  # TODO se usar essa parte tem que corrigir
+                AdjacencyUsers[userid][itemid] = row['rate'] / 5.0
                 AdjacencyItems[itemid][userid] = row['rate'] / 5.0
                 DegreeUsersVec[userid] += 1
                 DegreeItemsVec[itemid] += 1
@@ -337,6 +329,10 @@ def LocalEval(list_of_args):
                 VarUsersVals[i] = np.var(VarUsersVec[i])
             for i in range(ITEM_NUM):
                 VarItemsVals[i] = np.var(VarItemsVec[i])
+            # print(np.max(DegreeUsersVec))
+            # print(np.min(DegreeUsersVec))
+            # print(np.max(DegreeItemsVec))
+            # print(np.min(DegreeItemsVec))
 
             DUserMax = np.amax(DegreeUsers)
             DItemMax = np.amax(DegreeItems)
@@ -353,6 +349,8 @@ def LocalEval(list_of_args):
             UserFeatures = np.identity(USER_NUM)
             ItemFeatures = np.identity(ITEM_NUM)
 
+        # print(UserFeatures.shape)
+        # print(ItemFeatures.shape)
         if (UserData):
             UsrDat = get_UserData100k()
             UserFeatures = np.concatenate((UserFeatures, UsrDat), axis=1)
@@ -361,13 +359,11 @@ def LocalEval(list_of_args):
             ItmDat = get_ItemData100k()
             ItemFeatures = np.concatenate((ItemFeatures, ItmDat), axis=1)
 
+        # print(UserFeatures.shape)
+        # print(ItemFeatures.shape)
+        #
+        # print("Finish")
         # samples_per_batch = len(train) // int(BATCH_SIZE / (NEGSAMPLES + 1))
-        # samples_per_batch = sum([len(dictUsers[x][0]) for x in dictUsers.keys()]) // int(BATCH_SIZE / (NEGSAMPLES + 1))
-
-        # samples_per_batch = sum(
-        #     [len(grouped_instances[x]["train_items_with_interaction"]) for x in grouped_instances.keys()]) // int(
-        #     BATCH_SIZE / (NEGSAMPLES + 1))
-
         samples_per_batch = INTERACTIONS_TRAIN_NUM // int(BATCH_SIZE / (NEGSAMPLES + 1))
 
         user_batch = tf.placeholder(tf.int32, shape=[None], name="id_user")
@@ -388,13 +384,83 @@ def LocalEval(list_of_args):
         w_user = tf.constant(UserFeatures, name="userids", shape=[USER_NUM, UserFeatures.shape[1]], dtype=tf.float64)
         w_item = tf.constant(ItemFeatures, name="itemids", shape=[ITEM_NUM, ItemFeatures.shape[1]], dtype=tf.float64)
 
-        infers, regularizer = inferenceDense(phase, UserFeatures.shape[1], ItemFeatures.shape[1],
-                                             user_batch, item_batch, time_batch, w_user, w_item,
-                                             ureg, ireg, user_num=USER_NUM, item_num=ITEM_NUM,
-                                             dim=DIM,
-                                             device=DEVICE)
+        infer, infern, inferSig, varlist, regularizer = inferenceDense(phase, UserFeatures.shape[1],
+                                                                       ItemFeatures.shape[1],
+                                                                       user_batch, item_batch, time_batch, w_user,
+                                                                       w_item,
+                                                                       ureg, ireg, user_num=USER_NUM, item_num=ITEM_NUM,
+                                                                       dim=DIM,
+                                                                       device=DEVICE)
 
-        cost, train_op = optimizationRank(infers, regularizer, rate_batch, learning_rate=lr, reg=0.09, device=DEVICE)
+        infernStopped = tf.stop_gradient(infern)
+
+        Infere2d = tf.reshape(infer, [25, 10])
+        rate2d = tf.reshape(rate_batch, [25, 10])
+        NDCG2d = tf.concat([Infere2d, rate2d], 1)
+
+        Infere3d = tf.reshape(infer, [25, 10, 1])
+        rate3d = tf.reshape(rate_batch, [25, 10, 1])
+        NDCG3d = tf.concat([Infere3d, rate3d], 2)
+
+        Infere2dn = tf.reshape(infernStopped, [25, 10])
+        NDCG2dn = tf.concat([Infere2dn, rate2d], 1)
+
+        Infere3dn = tf.reshape(infernStopped, [25, 10, 1])
+        NDCG3dn = tf.concat([Infere3dn, rate3d], 2)
+
+        ####################################################
+        with tf.variable_scope("Surrogate"):
+            l11 = tf.layers.dense(inputs=NDCG2dn, units=20, activation=tf.nn.tanh,
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l11")
+            l11 = tf.layers.dropout(l11, rate=0.0, training=phase)
+            l12 = tf.layers.dense(inputs=l11, units=20, activation=tf.nn.tanh,
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l12")
+            # l12=tf.layers.dropout(l12,rate=0.1,training=phase)
+            ##
+            b21 = tf.reshape(NDCG3dn, [-1, 2])
+            l21 = tf.layers.dense(inputs=b21, units=20, activation=tf.nn.tanh,
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l21")
+            # l21=tf.layers.dropout(l21,rate=0.1,training=phase)
+            b22 = tf.reshape(l21, [-1, 10, 20])
+            b22 = tf.map_fn(my_elementwise_func, b22)
+            b23 = tf.reduce_mean(b22, axis=1)
+            l22 = tf.layers.dense(inputs=b23, units=20, activation=tf.nn.tanh,
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l22")
+            l31 = tf.multiply(l22, l12)
+            ##
+            l4 = tf.layers.dense(inputs=l31, units=8, activation=tf.nn.tanh,
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l4")
+            l4 = tf.layers.dropout(l4, rate=0.0, training=phase)
+            NDCGScore = tf.layers.dense(inputs=l4, units=1, activation=tf.nn.tanh,
+                                        kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="NDCGScore")
+            #################
+            l11n = tf.layers.dense(inputs=NDCG2d, units=20, reuse=True, trainable=False, activation=tf.nn.tanh,
+                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l11")
+            l12n = tf.layers.dense(inputs=l11n, units=20, reuse=True, trainable=False, activation=tf.nn.tanh,
+                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l12")
+            ##
+            b21n = tf.reshape(NDCG3d, [-1, 2])
+            l21n = tf.layers.dense(inputs=b21n, units=20, reuse=True, trainable=False, activation=tf.nn.tanh,
+                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l21")
+            b22n = tf.reshape(l21n, [-1, 10, 20])
+            b22n = tf.map_fn(my_elementwise_func, b22n)
+            b23n = tf.reduce_mean(b22n, axis=1)
+            l22n = tf.layers.dense(inputs=b23n, units=20, reuse=True, trainable=False, activation=tf.nn.tanh,
+                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l22")
+            l31n = tf.multiply(l22n, l12n)
+            ##
+            l4n = tf.layers.dense(inputs=l31n, units=8, reuse=True, trainable=False, activation=tf.nn.tanh,
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l4")
+            NDCGScoren = tf.layers.dense(inputs=l4n, units=1, reuse=True, trainable=False, activation=tf.nn.tanh,
+                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="NDCGScore")
+
+        ####################################################
+        # NDCGScore=NDCGModel(NDCG2d,NDCG3d,modelphase)
+        # print(NDCGScore)
+        global_step = tf.contrib.framework.get_or_create_global_step()
+        cost, train_op = optimization(inferSig, regularizer, rate_batch, reg=0.09, device=DEVICE)
+        train_NDCG = optNDCG(NDCGScoren, varlist, device=DEVICE)
+        train_Loss, loss_cost = optLoss(NDCGScore, ndcgTargets, device=DEVICE)
 
         init_op = tf.global_variables_initializer()
         config = tf.ConfigProto()
@@ -406,8 +472,8 @@ def LocalEval(list_of_args):
         predlist0 = list()
         with tf.Session(config=config) as sess:
             sess.run(init_op)
-
-            print("epoch,train_err,train_err1,train_err2,HitRatio5,HitRatio10,HitRatio20,NDCG5,NDCG10,NDCG20,time")
+            # summary_writer = tf.summary.FileWriter(logdir="/tmp/svd/log", graph=sess.graph)
+            print("epoch, train_err,train_err1,train_err2,HitRatio5,HitRatio10,HitRatio20,NDCG5,NDCG10,NDCG20,time")
             now = datetime.datetime.now()
 
             if local_losfun == "":
@@ -426,32 +492,81 @@ def LocalEval(list_of_args):
                     output_path + now.strftime('%Y%m%d%H%M%S') + '_GraphTFRank-test' + "_" + "_"
                     + str(SEED) + "_" + local_losfun + ".txt", "w", newline='')
 
+            # textTrain_file = open(
+            #     "./Output/" + now.strftime('%Y%m%d%H%M%S') + '_GraphSurrogate' + "_" + str(SURROGATE) + "_" + str(
+            #         SEED) + ".txt", "w", newline='')
+
             errors = deque(maxlen=samples_per_batch)
             losscost = deque(maxlen=samples_per_batch)
             truecost = deque(maxlen=samples_per_batch)
-            best_measure = 0
 
+            # print(samples_per_batch)
+            best_measure = 0
             for i in range(EPOCH_MAX * samples_per_batch):
                 start = time.time()
-
                 users, items, rates = GetTrainSample(grouped_instances, BATCH_SIZE, 10)
+                ################################
 
-                runner_nodes = [train_op]
-                for infer in infers:
-                    runner_nodes.append(infer)
-                runner_nodes.append(cost)
+                if (SURROGATE):
+                    if ((i // samples_per_batch) < 0):
+                        _, pred_batch, cst = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
+                                                                                          item_batch: items,
+                                                                                          rate_batch: rates,
+                                                                                          phase: True})
+                        inf2d, rt2d = sess.run([Infere2d, rate2d], feed_dict={user_batch: users,
+                                                                              item_batch: items,
+                                                                              rate_batch: rates,
+                                                                              phase: True,
+                                                                              modelphase: True})
 
-                # _, pred_batch, cst = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
-                rtn = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
-                                                                   item_batch: items,
-                                                                   rate_batch: rates,
-                                                                   phase: True})
-                pred_batch = rtn[1]
-                cst = rtn[-1]
-                losscost.append(0)
-                errors.append(0)
-                truecost.append(0)
-                pred_batch = clip(pred_batch)
+                        totndcg = np.asarray([ndcg_score(x, y, k=10) for x, y in zip(rt2d.tolist(), inf2d.tolist())])
+                        _, lscost = sess.run([train_Loss, loss_cost], feed_dict={user_batch: users,
+                                                                                 item_batch: items,
+                                                                                 rate_batch: rates,
+                                                                                 ndcgTargets: totndcg.reshape((-1, 1)),
+                                                                                 phase: True,
+                                                                                 modelphase: True})
+
+                        losscost.append(lscost)
+                        truecost.append(totndcg)
+                    else:
+                        inf2d, rt2d = sess.run([Infere2d, rate2d], feed_dict={user_batch: users,
+                                                                              item_batch: items,
+                                                                              rate_batch: rates,
+                                                                              phase: True,
+                                                                              modelphase: True})
+
+                        totndcg = np.asarray([ndcg_score(x, y, k=10) for x, y in zip(rt2d.tolist(), inf2d.tolist())])
+                        _, lscost = sess.run([train_Loss, loss_cost], feed_dict={user_batch: users,
+                                                                                 item_batch: items,
+                                                                                 rate_batch: rates,
+                                                                                 ndcgTargets: totndcg.reshape((-1, 1)),
+                                                                                 phase: True,
+                                                                                 modelphase: True})
+
+                        losscost.append(lscost)
+                        truecost.append(totndcg)
+                        #############################train_NDCG,
+                        _, pred_batch, cst = sess.run([train_NDCG, infer, NDCGScore], feed_dict={user_batch: users,
+                                                                                                 item_batch: items,
+                                                                                                 rate_batch: rates,
+                                                                                                 phase: True,
+                                                                                                 modelphase: False})
+                        errors.append(cst)
+                    # print(pred_batch)
+                else:
+                    ################################
+                    _, pred_batch, cst = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
+                                                                                      item_batch: items,
+                                                                                      rate_batch: rates,
+                                                                                      phase: True})
+                    losscost.append(0)
+                    errors.append(0)
+                    truecost.append(0)
+                    pred_batch = clip(pred_batch)
+                ################################
+
+                # print(i,' ',samples_per_batch)
                 end = time.time()
                 elapsed_epoch_time = end - start
                 if i % samples_per_batch == 0:
@@ -502,9 +617,6 @@ def LocalEval(list_of_args):
             textTrain_file.close()
             textTest_file.close()
 
-        # TODO
-        # degreelist, predlist = zip(*sorted(zip(degreelist, predlist)))
-
         return
 
     def GenNDCGSamples():
@@ -519,30 +631,6 @@ def LocalEval(list_of_args):
         comp = np.asarray([[[l, m] for l, m in zip(x, y)] for x, y in zip(trues.tolist(), yhats.tolist())])
 
         return trues, yhats, comp, totndcg.reshape((-1, 1))
-
-    def GetTrainSampleold(DictUsers, BatchSize=1000, topn=10):
-        trainusers = list()
-        trainitems = list()
-        traintargets = list()
-        numusers = int(BatchSize / (topn))
-
-        for i in range(numusers):
-            batchusers = random.randint(0, USER_NUM - 1)
-            while len(DictUsers[batchusers][0]) == 0:
-                batchusers = random.choice(list(DictUsers.keys()))
-            trainusers.extend(np.repeat(batchusers, topn))
-            ##Pos
-
-            trainitems.extend(np.random.choice(DictUsers[batchusers][0], int(topn / 2), replace=True))
-            traintargets.extend(np.ones(int(topn / 2)))
-            ##Neg
-            trainitems.extend(np.random.choice(DictUsers[batchusers][1], int(topn / 2), replace=True))
-            traintargets.extend(np.zeros(int(topn / 2)))
-
-        trainusers = np.asarray(trainusers)
-        trainitems = np.asarray(trainitems)
-        traintargets = np.asarray(traintargets)
-        return trainusers, trainitems, traintargets
 
     def GetTrainSample(grouped_instances, BatchSize=1000, topn=10):
         trainusers = list()
@@ -608,12 +696,14 @@ def LocalEval(list_of_args):
                                                                                    index=False)
 
         mean_measures = np.mean(measures_matrix, axis=0)
-        # return HitRatio5, HitRatio10, HitRatio20, NDCG5, NDCG10, NDCG20
         return mean_measures, measures_evalauted_names
 
-    Main(df_train, ItemData=False, UserData=False, Graph=False, lr=LR, ureg=0.0, ireg=0.0)
+    GuidedRec(df_train, ItemData=False, UserData=False, Graph=False, lr=LR_LOGLOSS, ureg=0.0, ireg=0.0)
     tf.reset_default_graph()
 
     with open(output_path + "configs-fim.txt", "w") as fo:
         for name, value in zip(parameters_names.replace(" ", "").split(","), parameters):
             fo.write(name + ":" + str(value) + "\n")
+
+
+LocalEval([])
