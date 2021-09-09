@@ -74,7 +74,7 @@ def LocalEval(list_of_args):
     alpha_risk = 0
     do_diff_to_ideal_risk = False
     eval_ideal_risk = False
-    dataset = "ml100k"
+    dataset = "ml1m"
     # LR = ""
     LOSSFUN = ""
     drop_rate = 0
