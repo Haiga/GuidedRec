@@ -79,7 +79,7 @@ def LocalEval(list_of_args):
     LOSSFUN = ""
     drop_rate = 0
 
-    id = "guidedrec-ml100k"
+    id = "guidedrec-ml1m"
 
     WGT_DECAY_LOGLOSS = 0.00001
     LR_LOGLOSS = 0.0005
