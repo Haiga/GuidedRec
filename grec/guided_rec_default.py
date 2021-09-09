@@ -107,10 +107,10 @@ def LocalEval(list_of_args):
     ITEMDATA = None
 
     # dictUsers = load_data(data_path + "UserDict.dat")
-    grouped_instances = load_data(f"prepared_data/{dataset}/dict_data_preparation.dat")
+    grouped_instances = load_data(f"./../prepared_data/{dataset}/dict_data_preparation.dat")
     # df_train = load_data(data_path + "RankData.dat")
     df_train = None
-    overall_infos = load_data(f"prepared_data/{dataset}/dataset_infos.dat")
+    overall_infos = load_data(f"./../prepared_data/{dataset}/dataset_infos.dat")
     USER_NUM = overall_infos["USER_NUM"]
     ITEM_NUM = overall_infos["ITEM_NUM"]
     INTERACTIONS_TRAIN_NUM = overall_infos["INTERACTIONS_TRAIN_NUM"]
@@ -125,7 +125,7 @@ def LocalEval(list_of_args):
                           num_baseline_dropouts, local_losfun, add_l2_reg_on_risk, add_loss_on_risk, alpha_risk,\
                           do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR_LOGLOSS, drop_rate, id"
 
-    output_path = "./Output/{:s}/".format(str(id))
+    output_path = "./../Output/{:s}/".format(str(id))
     # data_path = "src/Data/"
     data_path = None
     if not os.path.exists(output_path):
