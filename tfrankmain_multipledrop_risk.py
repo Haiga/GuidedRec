@@ -50,7 +50,7 @@ def LocalEval(list_of_args):
     # TODO arrumar parametros deles
     BATCH_SIZE = 250
     NEGSAMPLES = 1
-    DIM = 50#TODO aqui está 50 mas lá está prefixado o 20
+    DIM = 50  # TODO aqui está 50 mas lá está prefixado o 20
     EPOCH_MAX = 400
     # DEVICE = "/gpu:0"
     DEVICE = "/cpu:0"
@@ -105,11 +105,14 @@ def LocalEval(list_of_args):
     print("Starting")
 
     if os.name == 'nt':
-        os.system("copy \"{}\" \"{}\"".format("tfrankmain_multipledrop_risk.py", output_path + "tfrankmain_multipledrop_risk.py"))
-        os.system("copy \"{}\" \"{}\"".format("tfrankmain_multipledrop_risk_temp.py", output_path + "tfrankmain_multipledrop_risk_temp.py"))
+        os.system("copy \"{}\" \"{}\"".format("tfrankmain_multipledrop_risk.py",
+                                              output_path + "tfrankmain_multipledrop_risk.py"))
+        os.system("copy \"{}\" \"{}\"".format("tfrankmain_multipledrop_risk_temp.py",
+                                              output_path + "tfrankmain_multipledrop_risk_temp.py"))
     else:
         os.system("cp {} {}".format("tfrankmain_multipledrop_risk.py", output_path + "tfrankmain_multipledrop_risk.py"))
-        os.system("cp {} {}".format("tfrankmain_multipledrop_risk_temp.py", output_path + "tfrankmain_multipledrop_risk_temp.py"))
+        os.system("cp {} {}".format("tfrankmain_multipledrop_risk_temp.py",
+                                    output_path + "tfrankmain_multipledrop_risk_temp.py"))
 
     # Main(df_train, ItemData=False, UserData=False, Graph=False, lr=0.001, ureg=0.0, ireg=0.0)
 
@@ -442,10 +445,11 @@ def LocalEval(list_of_args):
                 runner_nodes.append(cost)
 
                 # _, pred_batch, cst = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
-                rtn = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
-                                                                   item_batch: items,
-                                                                   rate_batch: rates,
-                                                                   phase: True})
+                # rtn = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
+                rtn = sess.run(runner_nodes, feed_dict={user_batch: users,
+                                                        item_batch: items,
+                                                        rate_batch: rates,
+                                                        phase: True})
                 pred_batch = rtn[1]
                 cst = rtn[-1]
                 losscost.append(0)

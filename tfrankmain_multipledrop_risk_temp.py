@@ -100,7 +100,7 @@ def LocalEval(list_of_args):
 
     with open(output_path + "configs.txt", "w") as fo:
         for name, value in zip(parameters_names.replace(" ", "").split(","), parameters):
-            fo.write(name + ":" + str(value)+"\n")
+            fo.write(name + ":" + str(value) + "\n")
 
     print("Starting")
 
@@ -434,10 +434,11 @@ def LocalEval(list_of_args):
                 runner_nodes.append(cost)
 
                 # _, pred_batch, cst = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
-                rtn = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
-                                                                   item_batch: items,
-                                                                   rate_batch: rates,
-                                                                   phase: True})
+                # rtn = sess.run([train_op, infer, cost], feed_dict={user_batch: users,
+                rtn = sess.run(runner_nodes, feed_dict={user_batch: users,
+                                                        item_batch: items,
+                                                        rate_batch: rates,
+                                                        phase: True})
                 pred_batch = rtn[1]
                 cst = rtn[-1]
                 losscost.append(0)
@@ -485,7 +486,7 @@ def LocalEval(list_of_args):
                                                                           log_str,
                                                                           elapsed_epoch_time).replace(" ", "")
 
-                        print("NEW BEST:"+ log_line)
+                        print("NEW BEST:" + log_line)
                         textTest_file.write(
                             "New best at iteration " + str(i // samples_per_batch) + ": " + str(NDCG10) + '\n')
                         textTest_file.write(log_line + '\n')
@@ -608,7 +609,8 @@ def LocalEval(list_of_args):
 
     with open(output_path + "configs-fim.txt", "w") as fo:
         for name, value in zip(parameters_names.replace(" ", "").split(","), parameters):
-            fo.write(name + ":" + str(value)+"\n")
+            fo.write(name + ":" + str(value) + "\n")
+
 
 if __name__ == '__main__':
     num_baseline_dropouts = 1
