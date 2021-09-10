@@ -7,7 +7,7 @@ indexes = []
 metrics = []
 
 new_name = sys.argv[1]
-
+os.makedirs(f"Output/{new_name}/")
 for i in os.listdir("Output/"):
     if i.isdigit():
         os.rename(f"Output/{i}/", f"Output/{new_name}/{i}/")
