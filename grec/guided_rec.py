@@ -18,8 +18,8 @@ import datetime
 
 #######TODO 1
 drop_rate = 0.1
-num_baseline_dropouts = 3  # 2 5 or 10
-local_losfun = "XXXXX"
+num_baseline_dropouts = 2  # 2 5 or 10
+local_losfun = "NeuralSortCrossEntropyLossLocal"
 do_multi_dropout_with_logloss = False
 LOSSFUN = ""
 add_l2_reg_on_risk = True
