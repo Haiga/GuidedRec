@@ -21,7 +21,7 @@ NEGSAMPLES=1
 USER_NUM = 943
 ITEM_NUM = 1682
 DIM = 50
-EPOCH_MAX = 1000
+EPOCH_MAX = 500
 DEVICE = "/gpu:0"
 PERC=0.9
 SURROGATE=int(sys.argv[1])
@@ -153,7 +153,7 @@ def ndcg_score(y_true, y_score, k=10, gains="exponential"):
 
 def get_UserData100k():
     col_names = ["user", "age", "gender", "occupation","PostCode"]
-    df = pd.read_csv('../Data/u.user', sep='|', header=None, names=col_names, engine='python')
+    df = pd.read_csv('../Data/ml100k/u.user', sep='|', header=None, names=col_names, engine='python')
     del df["PostCode"]
     df["user"]-=1
     df=pd.get_dummies(df,columns=[ "age", "gender", "occupation"])
@@ -165,7 +165,7 @@ def get_ItemData100k():
                 ,"unknown","Action","Adventure","Animation","Childrens","Comedy","Crime","Documentary"
                 ,"Drama","Fantasy","FilmNoir","Horror","Musical","Mystery","Romance","SciFi","Thriller"
                 ,"War","Western"]
-    df = pd.read_csv('../Data/u.item', sep='|', header=None, names=col_names, engine='python')
+    df = pd.read_csv('../Data/ml100k/u.item', sep='|', header=None, names=col_names, engine='python')
     df['releasedate'] = pd.to_datetime(df['releasedate'])
     df['year'],df['month']=zip(*df['releasedate'].map(lambda x: [x.year,x.month]))
     df['year']-=df['year'].min()
@@ -271,11 +271,11 @@ def GuidedRec(train,ItemData=False,UserData=False,Graph=True,lr=0.00003,ureg=0.0
     
 
     if(UserData):
-      UsrDat=get_UserData()
+      UsrDat=get_UserData100k()
       UserFeatures=np.concatenate((UserFeatures,UsrDat), axis=1) 
 
     if(ItemData):
-      ItmDat=get_ItemData()
+      ItmDat=get_ItemData100k()
       ItemFeatures=np.concatenate((ItemFeatures,ItmDat), axis=1) 
       
 
@@ -554,8 +554,8 @@ def GetTrainSample(DictUsers,BatchSize=1000,topn=10):
 
 ITEMDATA=get_ItemData100k()
 
-dictUsers=load_data("../Data/UserDict.dat")
-df_train=load_data("../Data/RankData.dat")
+dictUsers=load_data("../Data/ml100k/UserDict.dat")
+df_train=load_data("../Data/ml100k/RankData.dat")
 warnings.filterwarnings('ignore')
 GuidedRec(df_train,ItemData=False,UserData=False,Graph=False,lr=0.001,ureg=0.0,ireg=0.0)
 tf.reset_default_graph() 
