@@ -452,7 +452,7 @@ def LocalEval(list_of_args):
                                                         phase: True})
                 pred_batch = rtn[1]
                 cst = rtn[-1]
-                losscost.append(0)
+                losscost.append(cst)
                 errors.append(0)
                 truecost.append(0)
                 pred_batch = clip(pred_batch)
