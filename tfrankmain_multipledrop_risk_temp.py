@@ -43,14 +43,15 @@ def LocalEval(list_of_args):
     dataset = list_of_args[7]
     LR = list_of_args[8]
     LOSSFUN = list_of_args[9]
+    drop_rate = list_of_args[10]
 
-    id = list_of_args[10]
+    id = list_of_args[11]
 
     # TODO arrumar parametros deles
     BATCH_SIZE = 250
     NEGSAMPLES = 1
     DIM = 50
-    EPOCH_MAX = 100
+    EPOCH_MAX = 450
     # DEVICE = "/gpu:0"
     DEVICE = "/cpu:0"
 
@@ -117,12 +118,12 @@ def LocalEval(list_of_args):
                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01))
             drops_u = []
             for i in range(num_baseline_dropouts):
-                drops_u.append(tf.layers.dropout(ul1mf, rate=0.1, training=phase))
+                drops_u.append(tf.layers.dropout(ul1mf, rate=drop_rate, training=phase))
             il1mf = tf.layers.dense(inputs=item_batch, units=20, name='il1mf', activation=tf.nn.crelu,
                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01))
             drops_i = []
             for i in range(num_baseline_dropouts):
-                drops_i.append(tf.layers.dropout(il1mf, rate=0.1, training=phase))
+                drops_i.append(tf.layers.dropout(il1mf, rate=drop_rate, training=phase))
 
             infers = []
             for i in range(num_baseline_dropouts):
