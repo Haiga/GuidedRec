@@ -22,10 +22,11 @@ USER_NUM = 943
 ITEM_NUM = 1682
 DIM = 50
 EPOCH_MAX = 500
-DEVICE = "/gpu:0"
+# DEVICE = "/gpu:0"
+DEVICE = "/cpu:0"
 PERC=0.9
-SURROGATE=int(sys.argv[1])
-SEED=int(sys.argv[2])
+SURROGATE=1
+SEED=45
 np.random.seed(SEED)
 tf.set_random_seed(SEED)
 
