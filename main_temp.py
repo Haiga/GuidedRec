@@ -33,12 +33,12 @@ if __name__ == '__main__':
                                                 all_lists.append(list_of_args)
                                                 id += 1
                                                 # LocalEval(all_lists)
-                                                if id == 1: return all_lists
+                                                # if id == 1: return all_lists
         return all_lists
 
 
     all_lists = run()
-    with multiprocessing.Pool(processes=1) as pool:
+    with multiprocessing.Pool(processes=2) as pool:
         # a = executor.submit(LocalEval, list_of_args)
         results = pool.map(LocalEval, all_lists)
         for r in results:
