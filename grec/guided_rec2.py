@@ -31,7 +31,7 @@ import datetime
 #################################
 #######TODO 2
 drop_rate = 0.1
-num_baseline_dropouts = 5  # 2 5 or 10
+num_baseline_dropouts = 10  # 2 5 or 10
 local_losfun = ""
 do_multi_dropout_with_logloss = True
 LOSSFUN = "None"
@@ -40,10 +40,10 @@ eval_ideal_risk = True
 do_diff_to_ideal_risk = True
 add_loss_on_risk = False
 alpha_risk = 2
-name_exec = "MultiDrop-"
+name_exec = "MultiDrop-v2-"
 #################################
 WGT_DECAY_LOGLOSS = 0.00001
-LR_LOGLOSS = 0.001
+LR_LOGLOSS = 0.0001
 #################################
 BATCH_SIZE = 250
 NEGSAMPLES = 1
