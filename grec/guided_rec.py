@@ -177,7 +177,7 @@ def optLoss2(NDCGscore, NDCGTrue, learning_rate=0.00003, reg=0.1, device="/cpu:0
 #     return cost, train_op
 
 
-def optimization(infer, infers_drop, regularizer, rate_batch, reg=0.1, device="/cpu:0"):
+def optimization(infer, infers_drop, regularizer, rate_batch, learning_rate=0.00003, reg=0.1, device="/cpu:0"):
     global_step = tf.train.get_global_step()
     assert global_step is not None
     with tf.device(device):
