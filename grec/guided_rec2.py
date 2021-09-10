@@ -17,30 +17,30 @@ import datetime
 #################################
 
 #######TODO 1
-drop_rate = 0.1
-num_baseline_dropouts = 3  # 2 5 or 10
-local_losfun = "XXXXX"
-do_multi_dropout_with_logloss = False
-LOSSFUN = ""
-add_l2_reg_on_risk = True
-eval_ideal_risk = True
-do_diff_to_ideal_risk = True
-add_loss_on_risk = False
-alpha_risk = 2
-name_exec = "RISK-"
-#################################
-#######TODO 2
 # drop_rate = 0.1
-# num_baseline_dropouts = 5  # 2 5 or 10
-# local_losfun = ""
-# do_multi_dropout_with_logloss = True
-# LOSSFUN = "XXXX"
+# num_baseline_dropouts = 3  # 2 5 or 10
+# local_losfun = "XXXXX"
+# do_multi_dropout_with_logloss = False
+# LOSSFUN = ""
 # add_l2_reg_on_risk = True
 # eval_ideal_risk = True
 # do_diff_to_ideal_risk = True
 # add_loss_on_risk = False
 # alpha_risk = 2
-# name_exec = "MultiDrop-"
+# name_exec = "RISK-"
+#################################
+#######TODO 2
+drop_rate = 0.1
+num_baseline_dropouts = 5  # 2 5 or 10
+local_losfun = ""
+do_multi_dropout_with_logloss = True
+LOSSFUN = "XXXX"
+add_l2_reg_on_risk = True
+eval_ideal_risk = True
+do_diff_to_ideal_risk = True
+add_loss_on_risk = False
+alpha_risk = 2
+name_exec = "MultiDrop-"
 #################################
 WGT_DECAY_LOGLOSS = 0.00001
 LR_LOGLOSS = 0.001
