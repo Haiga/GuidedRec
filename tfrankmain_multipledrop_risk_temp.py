@@ -175,7 +175,13 @@ def LocalEval(list_of_args):
                     cast_infer = tf.dtypes.cast(infer, tf.float32)
                     cost_drop, _ = globals()[local_losfun](tf.reshape(rate_batch, [25, 10]),
                                                            tf.reshape(cast_infer, [25, 10]))
-                    cost_drop = cost_drop / tf.reduce_max(cost_drop)
+
+                    if local_losfun == "GumbelApproxNDCGLossLocal":
+                        cost_drop = -cost_drop
+                    elif local_losfun == "NeuralSortCrossEntropyLossLocal":
+                        cost_drop = cost_drop / tf.reduce_max(cost_drop)
+
+                    # cost_drop = cost_drop / tf.reduce_max(cost_drop)
                     mat.append(cost_drop)
 
                     if add_l2_reg_on_risk:

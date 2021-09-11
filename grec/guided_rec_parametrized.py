@@ -216,9 +216,9 @@ def RunGuidedRecParametrized(list_of_args):
                     cost_drop, _ = globals()[local_losfun](tf.reshape(rate_batch, [25, 10]),
                                                            tf.reshape(cast_infer, [25, 10]))
 
-                    if LOSSFUN == "GumbelApproxNDCGLossLocal":
+                    if local_losfun == "GumbelApproxNDCGLossLocal":
                         cost_drop = -cost_drop
-                    elif LOSSFUN == "NeuralSortCrossEntropyLossLocal":
+                    elif local_losfun == "NeuralSortCrossEntropyLossLocal":
                         cost_drop = cost_drop / tf.reduce_max(cost_drop)
 
                     mat.append(cost_drop)
