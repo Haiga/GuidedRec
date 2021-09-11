@@ -23,11 +23,13 @@ if __name__ == '__main__':
                                         # for LR in [0.01, 0.0001]:
                                         for LR in [0.0005]:
                                             for drop_rate in [0.1]:
-                                                list_of_args = [num_baseline_dropouts, local_losfun, add_l2_reg_on_risk,
-                                                                add_loss_on_risk,
-                                                                alpha_risk,
-                                                                do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, LOSSFUN, drop_rate, id]
-                                                all_lists.append(list_of_args)
+                                                #TODO remover no futuro
+                                                if local_losfun != "NeuralSortCrossEntropyLossLocal":
+                                                    list_of_args = [num_baseline_dropouts, local_losfun, add_l2_reg_on_risk,
+                                                                    add_loss_on_risk,
+                                                                    alpha_risk,
+                                                                    do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, LOSSFUN, drop_rate, id]
+                                                    all_lists.append(list_of_args)
                                                 id += 1
                                             # if id == 1: return all_lists
         return all_lists
