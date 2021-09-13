@@ -1,5 +1,4 @@
 import os
-
 import numpy as np
 import pandas as pd
 import time
@@ -16,18 +15,11 @@ import pickle
 import math
 import datetime
 
-import pickle
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.metrics.pairwise import euclidean_distances
-from sklearn.metrics.pairwise import rbf_kernel
-from sklearn import preprocessing
-from risk_losses import geoRisk
+from grec.risk_losses import geoRisk
 from tfr_losses_local import *
 
 
 def RunGuidedRecParametrized(list_of_args):
-    tf.reset_default_graph()
-
     #################################
 
     drop_rate = list_of_args[0]
@@ -49,6 +41,7 @@ def RunGuidedRecParametrized(list_of_args):
     id = list_of_args[12]
     #################################
     dataset = "ml100k"
+
     BATCH_SIZE = 250
     NEGSAMPLES = 1
     USER_NUM = 943
@@ -62,25 +55,36 @@ def RunGuidedRecParametrized(list_of_args):
     SEED = 45
     np.random.seed(SEED)
     tf.set_random_seed(SEED)
-
+    tf.random.set_random_seed(SEED)
+    random.seed(SEED)
     print('Graph', "-", SURROGATE, "-", SEED)
+
     if not os.path.exists("./Output/" + name_exec + "/"):
         os.makedirs("./Output/" + name_exec + "/")
 
     ##########
     parameters = [BATCH_SIZE, NEGSAMPLES, DIM, EPOCH_MAX, SEED, LOSSFUN,
                   num_baseline_dropouts, local_losfun, add_l2_reg_on_risk, add_loss_on_risk, alpha_risk,
-                  do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR_LOGLOSS, drop_rate, do_multi_dropout_with_logloss, name_exec, id]
+                  do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR_LOGLOSS, drop_rate, do_multi_dropout_with_logloss,
+                  name_exec, id]
 
     parameters_names = "BATCH_SIZE, NEGSAMPLES, DIM, EPOCH_MAX, SEED, LOSSFUN,\
-                          num_baseline_dropouts, local_losfun, add_l2_reg_on_risk, add_loss_on_risk, alpha_risk,\
-                          do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR_LOGLOSS, drop_rate, do_multi_dropout_with_logloss, name_exec, id"
-
+                              num_baseline_dropouts, local_losfun, add_l2_reg_on_risk, add_loss_on_risk, alpha_risk,\
+                              do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR_LOGLOSS, drop_rate, do_multi_dropout_with_logloss, name_exec, id"
 
     with open("./Output/" + name_exec + "/" + "configs.txt", "w") as fo:
         for name, value in zip(parameters_names.replace(" ", "").split(","), parameters):
             fo.write(name + ":" + str(value) + "\n")
     ##########
+
+    import pickle
+    from sklearn.metrics.pairwise import cosine_similarity
+    from sklearn.metrics.pairwise import euclidean_distances
+    from sklearn.metrics.pairwise import rbf_kernel
+    from sklearn import preprocessing
+
+    tf.reset_default_graph()
+
     def load_data(filename):
         try:
             with open(filename, "rb") as f:
@@ -100,11 +104,11 @@ def RunGuidedRecParametrized(list_of_args):
             user_batch = tf.nn.embedding_lookup(idx_user, user_batch, name="embedding_user")
             item_batch = tf.nn.embedding_lookup(idx_item, item_batch, name="embedding_item")
 
-            ul = tf.get_variable('ul', [ufsize, 20], initializer=tf.random_normal_initializer(stddev=0.01),
+            ul = tf.get_variable('ul', [ufsize, 20], initializer=tf.random_normal_initializer(stddev=0.01, seed=SEED),
                                  dtype=tf.float64)
             ulb = tf.get_variable('ulb', [1, 20], initializer=tf.constant_initializer(0), dtype=tf.float64)
 
-            il = tf.get_variable('il', [ifsize, 20], initializer=tf.random_normal_initializer(stddev=0.01),
+            il = tf.get_variable('il', [ifsize, 20], initializer=tf.random_normal_initializer(stddev=0.01, seed=SEED),
                                  dtype=tf.float64)
             ilb = tf.get_variable('ilb', [1, 20], initializer=tf.constant_initializer(0), dtype=tf.float64)
 
@@ -115,7 +119,7 @@ def RunGuidedRecParametrized(list_of_args):
             il1mf = tf.nn.crelu(outputil1mf)
 
             ###
-
+            # tf.nn.dropout
             drops_u = []
             for i in range(num_baseline_dropouts):
                 drops_u.append(tf.layers.dropout(ul1mf, rate=drop_rate, training=phase))
@@ -172,16 +176,6 @@ def RunGuidedRecParametrized(list_of_args):
             train_LOSS = tf.contrib.opt.AdamWOptimizer(0.00001, learning_rate=0.000015).minimize(AllLoss)
         return train_LOSS, costLOSS
 
-    # def optimization(infer, regularizer, rate_batch, learning_rate=0.00003, reg=0.1, device="/cpu:0"):
-    #     global_step = tf.train.get_global_step()
-    #     assert global_step is not None
-    #     with tf.device(device):
-    #         cost = tf.nn.sigmoid_cross_entropy_with_logits(labels=rate_batch, logits=infer)
-    #         train_op = tf.contrib.opt.AdamWOptimizer(0.00001, learning_rate=learning_rate).minimize(cost,
-    #                                                                                                 global_step=global_step)
-    #
-    #     return cost, train_op
-
     def optimization(infer, infers_drop, regularizer, rate_batch, learning_rate=0.00003, reg=0.1, device="/cpu:0"):
         global_step = tf.train.get_global_step()
         assert global_step is not None
@@ -194,8 +188,8 @@ def RunGuidedRecParametrized(list_of_args):
 
             rate_batch = tf.dtypes.cast(rate_batch, tf.float32)
             regularizer = tf.dtypes.cast(regularizer, tf.float32)
-            cost = regularizer
-
+            # cost = regularizer
+            cost = tf.dtypes.cast(0, tf.float32)
             if local_losfun == "":
                 if do_multi_dropout_with_logloss:
                     for infer_temp in infers_drop:
@@ -452,48 +446,50 @@ def RunGuidedRecParametrized(list_of_args):
             ################# Copy of the surrogate model without access to the recsys parameters
             ##MLP
             l11 = tf.layers.dense(inputs=NDCG2dn, units=20, activation=tf.nn.tanh,
-                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l11")
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01, seed=SEED), name="l11")
             l12 = tf.layers.dense(inputs=l11, units=20, activation=tf.nn.tanh,
-                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l12")
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01, seed=SEED), name="l12")
             ##NFM
             b21 = tf.reshape(NDCG3dn, [-1, 2])
             l21 = tf.layers.dense(inputs=b21, units=20, activation=tf.nn.tanh,
-                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l21")
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01, seed=SEED), name="l21")
             b22 = tf.reshape(l21, [-1, 10, 20])
             b22 = tf.map_fn(my_elementwise_func, b22)
             b23 = tf.reduce_mean(b22, axis=1)
             l22 = tf.layers.dense(inputs=b23, units=20, activation=tf.nn.tanh,
-                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l22")
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01, seed=SEED), name="l22")
             l31 = tf.multiply(l22, l12)
             ##Comb
             l4 = tf.layers.dense(inputs=l31, units=8, activation=tf.nn.tanh,
-                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l4")
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01, seed=SEED), name="l4")
             NDCGScore_without_recsys = tf.layers.dense(inputs=l4, units=1, activation=tf.nn.tanh,
-                                                       kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                                       kernel_initializer=tf.random_normal_initializer(stddev=0.01,
+                                                                                                       seed=SEED),
                                                        name="NDCGScore")
 
             ################# Copy of the surrogate model with access to the recsys parameters
             ## MLP
             l11n = tf.layers.dense(inputs=NDCG2d, units=20, reuse=True, trainable=False, activation=tf.nn.tanh,
-                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l11")
+                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01, seed=SEED), name="l11")
             l12n = tf.layers.dense(inputs=l11n, units=20, reuse=True, trainable=False, activation=tf.nn.tanh,
-                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l12")
+                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01, seed=SEED), name="l12")
             ## NFM
             b21n = tf.reshape(NDCG3d, [-1, 2])
             l21n = tf.layers.dense(inputs=b21n, units=20, reuse=True, trainable=False, activation=tf.nn.tanh,
-                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l21")
+                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01, seed=SEED), name="l21")
             b22n = tf.reshape(l21n, [-1, 10, 20])
             b22n = tf.map_fn(my_elementwise_func, b22n)
             b23n = tf.reduce_mean(b22n, axis=1)
             l22n = tf.layers.dense(inputs=b23n, units=20, reuse=True, trainable=False, activation=tf.nn.tanh,
-                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l22")
+                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01, seed=SEED), name="l22")
             l31n = tf.multiply(l22n, l12n)
             ##Comb
             l4n = tf.layers.dense(inputs=l31n, units=8, reuse=True, trainable=False, activation=tf.nn.tanh,
-                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01), name="l4")
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01, seed=SEED), name="l4")
             NDCGScore_with_recsys = tf.layers.dense(inputs=l4n, units=1, reuse=True, trainable=False,
                                                     activation=tf.nn.tanh,
-                                                    kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                                    kernel_initializer=tf.random_normal_initializer(stddev=0.01,
+                                                                                                    seed=SEED),
                                                     name="NDCGScore")
 
         ####################################################
@@ -514,16 +510,13 @@ def RunGuidedRecParametrized(list_of_args):
         predlist = list()
         degreelist0 = list()
         predlist0 = list()
-
-
-
         with tf.Session(config=config) as sess:
             sess.run(init_op)
             print("epochs, train_err,train_err1,train_err2,HitRatio5,HitRatio10,HitRatio20,NDCG5,NDCG10,NDCG20")
             now = datetime.datetime.now()
             textTrain_file = open(
                 "./Output/" + name_exec + "/" + now.strftime('%Y%m%d%H%M%S') + '_Graph' + "_" + str(
-                    SURROGATE) + "_" + str(SEED) + name_exec + ".txt",
+                    SURROGATE) + "_" + str(SEED) + ".txt",
                 "w", newline='')
             errors = deque(maxlen=samples_per_batch)
             logcost = deque(maxlen=samples_per_batch)
@@ -532,6 +525,7 @@ def RunGuidedRecParametrized(list_of_args):
             start = time.time()
 
             bestndcg10 = 0
+            print(samples_per_batch)
             for i in range(EPOCH_MAX * samples_per_batch):
 
                 users, items, rates = GetTrainSample(grouped_instances, BATCH_SIZE, 10)
@@ -766,19 +760,7 @@ def RunGuidedRecParametrized(list_of_args):
                                 HitRatio5, HitRatio10,
                                 HitRatio20,
                                 NDCG5, NDCG10, NDCG20))
-
-                        textTrain_file.write(
-                            "NEWBEST{:3d},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f}".format(i // samples_per_batch,
-                                                                                             train_err,
-                                                                                             train_err1, train_err2,
-                                                                                             train_err3,
-                                                                                             HitRatio5, HitRatio10,
-                                                                                             HitRatio20,
-                                                                                             NDCG5, NDCG10,
-                                                                                             NDCG20) + '\n')
-                        textTrain_file.flush()
-
-                        with open("./Output/" + name_exec + "/ml100k-measures.csv", "w+") as fo:
+                        with open("./Output/" + name_exec + "/" + "measures.csv", "w+") as fo:
                             for line in matrix_measures:
                                 fo.write(str(line) + "\n")
 
