@@ -20,8 +20,15 @@ from tfr_losses_local import *
 
 
 def RunGuidedRecParametrized(list_of_args):
+    if not os.path.exists("./Output/"):
+        os.makedirs("./Output/")
+    if not os.path.isfile("./Output/" + "names.txt"):
+        with open("./Output/" + "names.txt", "w") as fu:
+            fu.close()
+    with open("./Output/" + "names.txt", "a") as fu:
+        fu.write(str(list_of_args))
+        fu.close()
     #################################
-
     drop_rate = list_of_args[0]
     num_baseline_dropouts = list_of_args[1]
     local_losfun = list_of_args[2]
