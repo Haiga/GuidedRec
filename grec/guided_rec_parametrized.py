@@ -783,7 +783,7 @@ def RunGuidedRecParametrized(list_of_args):
                                 fo.write(str(line) + "\n")
 
             textTrain_file.close()
-        degreelist, predlist = zip(*sorted(zip(degreelist, predlist)))
+        # degreelist, predlist = zip(*sorted(zip(degreelist, predlist)))
 
         return
 

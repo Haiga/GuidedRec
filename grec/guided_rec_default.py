@@ -640,7 +640,7 @@ def GuidedRec(train, ItemData=False, UserData=False, Graph=True, lr=0.00003, ure
                             fo.write(str(line))
 
         textTrain_file.close()
-    degreelist, predlist = zip(*sorted(zip(degreelist, predlist)))
+    # degreelist, predlist = zip(*sorted(zip(degreelist, predlist)))
 
     return
 
