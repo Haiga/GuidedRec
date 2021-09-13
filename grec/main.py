@@ -24,7 +24,7 @@ if __name__ == '__main__':
                                 0.001, id]
                 id += 1
                 base_args.append(list_of_args)
-                return base_args
+
             list_of_args = [0.1,
                             num_baseline_dropouts,
                             "",
