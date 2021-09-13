@@ -10,19 +10,19 @@ for i in os.listdir("Output/"):
         i = int(i)
 
 
-    if os.path.isfile(f"Output/{i}/ml100k-measures.csv"):
-        with open(f"Output/{i}/ml100k-measures.csv") as fi:
-            with open(f"Output/{i}/measures_test.txt", "w+") as fo:
-                fo.write("HR5,HR10,HR20,NDCG5,NDCG10,NDCG20\n")
-                for line in fi:
-                    fo.write(line.replace(" ", "").replace("\n", "").replace("[", "").replace("]", "") +"\n")
+        if os.path.isfile(f"Output/{i}/ml100k-measures.csv"):
+            with open(f"Output/{i}/ml100k-measures.csv") as fi:
+                with open(f"Output/{i}/measures_test.txt", "w+") as fo:
+                    fo.write("HR5,HR10,HR20,NDCG5,NDCG10,NDCG20\n")
+                    for line in fi:
+                        fo.write(line.replace(" ", "").replace("\n", "").replace("[", "").replace("]", "") +"\n")
 
-    if os.path.isfile(f"Output/{i}/measures_test.txt"):
-        df = pd.read_csv(f"Output/{i}/measures_test.txt", sep=",")
-        df.columns = ["HR5", "HR10", "HR20", "NDCG5", "NDCG10", "NDCG20"]
-        indexes.append(i)
-        m = np.mean(df["NDCG10"].values)
-        metrics.append(m)
+        if os.path.isfile(f"Output/{i}/measures_test.txt"):
+            df = pd.read_csv(f"Output/{i}/measures_test.txt", sep=",")
+            df.columns = ["HR5", "HR10", "HR20", "NDCG5", "NDCG10", "NDCG20"]
+            indexes.append(i)
+            m = np.mean(df["NDCG10"].values)
+            metrics.append(m)
 
 order_indexes = np.argsort(metrics)[::-1]
 
