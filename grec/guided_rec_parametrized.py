@@ -15,7 +15,7 @@ import pickle
 import math
 import datetime
 
-from grec.risk_losses import geoRisk
+from risk_losses import geoRisk
 from tfr_losses_local import *
 
 
