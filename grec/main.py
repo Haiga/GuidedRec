@@ -21,7 +21,7 @@ if __name__ == '__main__':
                                 False,
                                 2,
                                 str(id),
-                                0.0001, id]
+                                0.001, id]
                 id += 1
                 base_args.append(list_of_args)
                 return base_args
@@ -36,7 +36,7 @@ if __name__ == '__main__':
                             False,
                             2,
                             str(id),
-                            0.0001, id]
+                            0.001, id]
             id += 1
             base_args.append(list_of_args)
 
@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
 
     all_lists = run()
-    with multiprocessing.Pool(processes=1) as pool:
+    with multiprocessing.Pool(processes=2) as pool:
         # a = executor.submit(LocalEval, list_of_args)
         results = pool.map(RunGuidedRecParametrized, all_lists)
         for r in results:
