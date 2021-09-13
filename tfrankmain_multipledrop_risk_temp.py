@@ -52,7 +52,7 @@ def LocalEval(list_of_args):
     BATCH_SIZE = 250
     NEGSAMPLES = 1
     DIM = 50
-    EPOCH_MAX = 450
+    EPOCH_MAX = 200
     # DEVICE = "/gpu:0"
     DEVICE = "/cpu:0"
 
