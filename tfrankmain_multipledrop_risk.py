@@ -44,8 +44,9 @@ def LocalEval(list_of_args):
     LR = list_of_args[8]
     LOSSFUN = list_of_args[9]
     drop_rate = list_of_args[10]
+    EMBEDD_SIZE = list_of_args[11]
 
-    id = list_of_args[11]
+    id = list_of_args[12]
 
     # TODO arrumar parametros deles
     BATCH_SIZE = 250
@@ -86,11 +87,11 @@ def LocalEval(list_of_args):
 
     parameters = [BATCH_SIZE, NEGSAMPLES, DIM, EPOCH_MAX, SEED, LOSSFUN,
                   num_baseline_dropouts, local_losfun, add_l2_reg_on_risk, add_loss_on_risk, alpha_risk,
-                  do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, drop_rate, id]
+                  do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, drop_rate, EMBEDD_SIZE, id]
 
     parameters_names = "BATCH_SIZE, NEGSAMPLES, DIM, EPOCH_MAX, SEED, LOSSFUN,\
                           num_baseline_dropouts, local_losfun, add_l2_reg_on_risk, add_loss_on_risk, alpha_risk,\
-                          do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, drop_rate, id"
+                          do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, drop_rate, EMBEDD_SIZE, id"
 
     output_path = "./Output/{:s}/".format(str(id))
     # data_path = "src/Data/"
@@ -123,12 +124,12 @@ def LocalEval(list_of_args):
             user_batch = tf.nn.embedding_lookup(idx_user, user_batch, name="embedding_user")
             item_batch = tf.nn.embedding_lookup(idx_item, item_batch, name="embedding_item")
 
-            ul1mf = tf.layers.dense(inputs=user_batch, units=20, name='ul1mf', activation=tf.nn.crelu,
+            ul1mf = tf.layers.dense(inputs=user_batch, units=EMBEDD_SIZE, name='ul1mf', activation=tf.nn.crelu,
                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01))
             drops_u = []
             for i in range(num_baseline_dropouts):
                 drops_u.append(tf.layers.dropout(ul1mf, rate=drop_rate, training=phase))
-            il1mf = tf.layers.dense(inputs=item_batch, units=20, name='il1mf', activation=tf.nn.crelu,
+            il1mf = tf.layers.dense(inputs=item_batch, units=EMBEDD_SIZE, name='il1mf', activation=tf.nn.crelu,
                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01))
             drops_i = []
             for i in range(num_baseline_dropouts):
