@@ -4,7 +4,7 @@ import numpy as np
 from tensorflow_ranking.python.losses_impl import neural_sort
 from metrics import ndcg_score
 from sklearn.metrics.pairwise import cosine_similarity
-
+from tfr_losses_local import *
 from scipy.stats import norm
 import math
 def getGeoRisk(mat, alpha):
@@ -96,7 +96,10 @@ with tf.Session(config=config) as sess:
     c3, _ = NeuralSortCrossEntropyLossLocal(tf.reshape(rate_batch, [25, 10]), tf.reshape(cast_infer3, [25, 10]))
 
     cc, _ = NeuralSortCrossEntropyLossLocal(tf.reshape(rate_batch, [25, 10]), tf.reshape(rate_batch, [25, 10]))
-
+    c1r = c1
+    c2r = c2
+    c3r = c3
+    ccr = cc
     c1 = c1/tf.reduce_max(c1)
     c2 = c2/tf.reduce_max(c2)
     c3 = c1/tf.reduce_max(c3)
@@ -151,7 +154,8 @@ with tf.Session(config=config) as sess:
         si = tf.reduce_sum(mat[:, i])
         z_risk = zRisk(mat, alpha, i=i)
 
-        num_queries = mat.shape[0]
+        # num_queries = mat.shape[0]
+        num_queries = tf.cast(mat.shape[0], tf.float32)
         value = z_risk / num_queries
         # m = torch.distributions.normal.Normal(torch.tensor([0.0], device=device), torch.tensor([1.0], device=device))
         m = tf.distributions.Normal(0.0, 1.0)
@@ -164,6 +168,9 @@ with tf.Session(config=config) as sess:
     #########
 
     k = 10
-    ndcg_arr = np.asarray([ndcg_score(x, y, k=k) for x, y in zip(rate_batch_np.tolist(), cast_infer1_np.tolist())])
-    ndcg_mean = np.mean(ndcg_arr)
+    ndcg_arr1 = np.asarray([ndcg_score(x, y, k=k) for x, y in zip(rate_batch_np.tolist(), cast_infer1_np.tolist())])
+    ndcg_arr2 = np.asarray([ndcg_score(x, y, k=k) for x, y in zip(rate_batch_np.tolist(), cast_infer2_np.tolist())])
+    ndcg_arr3 = np.asarray([ndcg_score(x, y, k=k) for x, y in zip(rate_batch_np.tolist(), cast_infer3_np.tolist())])
+    ndcg_arrc = np.asarray([ndcg_score(x, y, k=k) for x, y in zip(rate_batch_np.tolist(), rate_batch_np.tolist())])
+    # ndcg_mean = np.mean(ndcg_arr)
     x = 0

@@ -225,7 +225,9 @@ def RunGuidedRecParametrized(list_of_args):
                     mat.append(cost_drop)
 
                     if add_l2_reg_on_risk:
-                        cost_reg = tf.nn.l2_loss(tf.subtract(cast_infer, rate_batch))
+                        # cost_reg = tf.nn.l2_loss(tf.subtract(cast_infer, rate_batch))
+                        cost_reg = tf.nn.sigmoid_cross_entropy_with_logits(labels=rate_batch,
+                                                                            logits=cast_infer)
                         cost = tf.add(cost, cost_reg)
 
                     if add_loss_on_risk:
