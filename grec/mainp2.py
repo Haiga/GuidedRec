@@ -7,11 +7,11 @@ if __name__ == '__main__':
     # executor = ThreadPoolExecutor(max_workers=2)
     def run():
         base_args = []
-        id = 300
+        id = 400
         for num_baseline_dropouts in [2, 5]:
             for alpha_risk in [2, 5]:
                 for local_losfun in ["NeuralSortCrossEntropyLossLocal", "GumbelApproxNDCGLossLocal"]:
-                    for LR_LOGLOSS in [0.0005, 0.0002]:
+                    for LR_LOGLOSS in [0.01, 0.005]:
                         list_of_args = [0.1,
                                         num_baseline_dropouts,
                                         local_losfun,
