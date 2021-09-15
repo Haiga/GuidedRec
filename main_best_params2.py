@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
 
     all_lists = run()
-    with multiprocessing.Pool(processes=3) as pool:
+    with multiprocessing.Pool(processes=2) as pool:
         # a = executor.submit(LocalEval, list_of_args)
         results = pool.map(LocalEval, all_lists)
         for r in results:
