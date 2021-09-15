@@ -65,20 +65,21 @@ if __name__ == '__main__':
                                                 # drop_rate = 0.1
                                                 if num_baseline_dropouts == 1:
                                                     # drop_rate = 0
+                                                    if not (id <= 1006):
+                                                        list_of_args = [num_baseline_dropouts, local_losfun, add_l2_reg_on_risk,
+                                                                        add_loss_on_risk,
+                                                                        alpha_risk,
+                                                                        do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, LOSSFUN, 0, 45, id]
+                                                        all_lists.append(list_of_args)
+                                                    id += 1
 
+                                                if not (id <= 1006):
                                                     list_of_args = [num_baseline_dropouts, local_losfun, add_l2_reg_on_risk,
                                                                     add_loss_on_risk,
                                                                     alpha_risk,
-                                                                    do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, LOSSFUN, 0, 45, id]
+                                                                    do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR,
+                                                                    LOSSFUN, 0.1, 45, id]
                                                     all_lists.append(list_of_args)
-                                                    id += 1
-
-                                                list_of_args = [num_baseline_dropouts, local_losfun, add_l2_reg_on_risk,
-                                                                add_loss_on_risk,
-                                                                alpha_risk,
-                                                                do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR,
-                                                                LOSSFUN, 0.1, 45, id]
-                                                all_lists.append(list_of_args)
                                                 id += 1
                                                 # LocalEval(all_lists)
                                                 # if id == 1: return all_lists
