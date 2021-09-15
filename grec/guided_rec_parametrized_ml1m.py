@@ -53,7 +53,7 @@ def RunGuidedRecParametrized(list_of_args):
     WGT_DECAY_NDCG = 0.00001
     LR_NDCG = 0.00065
     #################################
-    dataset = "ml100k"
+    dataset = "ml1m"
 
     BATCH_SIZE = 250
     NEGSAMPLES = 1
