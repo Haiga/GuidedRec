@@ -52,7 +52,7 @@ def LocalEval(list_of_args):
     BATCH_SIZE = 250
     NEGSAMPLES = 1
     DIM = 50  # TODO aqui está 50 mas lá está prefixado o 20
-    EPOCH_MAX = 30
+    EPOCH_MAX = 30###ALSO SAVING ON CONTENT
     # DEVICE = "/gpu:0"
     DEVICE = "/cpu:0"
 
@@ -93,7 +93,7 @@ def LocalEval(list_of_args):
                           num_baseline_dropouts, local_losfun, add_l2_reg_on_risk, add_loss_on_risk, alpha_risk,\
                           do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, drop_rate, EMBEDD_SIZE, id"
 
-    output_path = "./Output/{:s}/".format(str(id))
+    output_path = "/content/gdrive/MyDrive/Output//{:s}/".format(str(id))
     # data_path = "src/Data/"
     data_path = None
     if not os.path.exists(output_path):
