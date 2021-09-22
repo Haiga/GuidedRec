@@ -53,8 +53,8 @@ def LocalEval(list_of_args):
     NEGSAMPLES = 1
     DIM = 50  # TODO aqui está 50 mas lá está prefixado o 20
     EPOCH_MAX = 200
-    DEVICE = "/gpu:0"
-    # DEVICE = "/cpu:0"
+    # DEVICE = "/gpu:0"
+    DEVICE = "/cpu:0"
 
     SEED = 45
     # LOSSFUN = "neural_sort_cross_entropy_loss"
