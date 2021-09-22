@@ -1,7 +1,7 @@
 # from concurrent.futures.thread import ThreadPoolExecutor
 import multiprocessing
 
-from tfrankmain_multipledrop_risk import LocalEval
+from tfrankmain_multipledrop_risk_gpu import LocalEval
 
 
 if __name__ == '__main__':
