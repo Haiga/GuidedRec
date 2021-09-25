@@ -94,6 +94,8 @@ def LocalEval(list_of_args):
                           do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, drop_rate, EMBEDD_SIZE, id"
 
     output_path = "./Output/{:s}/".format(str(id))
+    output_path = "/content/gdrive/MyDrive/Output//{:s}/".format(str(id))
+
     # data_path = "src/Data/"
     data_path = None
     if not os.path.exists(output_path):
