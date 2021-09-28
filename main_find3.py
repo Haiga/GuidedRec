@@ -7,12 +7,12 @@ from tfrankmain_multipledrop_risk import LocalEval
 if __name__ == '__main__':
     # executor = ThreadPoolExecutor(max_workers=2)
     def run():
-        id = 1
+        id = 56666
         all_lists = []
         LOSSFUN = ""
         for num_baseline_dropouts in [10]:
             for local_losfun in ["GumbelApproxNDCGLossLocal"]:
-                for add_l2_reg_on_risk in [True, False]:
+                for add_l2_reg_on_risk in [False, True]:
                     for add_loss_on_risk in [True]:
                         for alpha_risk in [2]:
                             for do_diff_to_ideal_risk in [True]:
@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
 
     all_lists = run()
-    with multiprocessing.Pool(processes=3) as pool:
+    with multiprocessing.Pool(processes=2) as pool:
         # a = executor.submit(LocalEval, list_of_args)
         results = pool.map(LocalEval, all_lists)
         for r in results:
