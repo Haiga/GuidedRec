@@ -6,13 +6,13 @@ from tfrankmain_multipledrop_risk_tune import LocalEval
 if __name__ == '__main__':
     # executor = ThreadPoolExecutor(max_workers=2)
     def run():
-        id = 998666
+        id = 995666
         all_lists = []
         LOSSFUN = ""
-        for num_baseline_dropouts in [2]:
+        for num_baseline_dropouts in [10]:
             for local_losfun in ["GumbelApproxNDCGLossLocal"]:
                 for add_l2_reg_on_risk in [True]:
-                    for add_loss_on_risk in [True]:
+                    for add_loss_on_risk in [False]:
                         for alpha_risk in [2, 5]:
                             for do_diff_to_ideal_risk in [True]:
                                 for eval_ideal_risk in [True]:
