@@ -18,7 +18,7 @@ if __name__ == '__main__':
                                 for eval_ideal_risk in [True]:
                                     # for dataset in ["ml100k", "ml1m"]:
                                     # for dataset in ["ml100k"]:
-                                    for dataset in ["ml100k"]:
+                                    for dataset in ["ml1m"]:
                                         # for LR in [0.01, 0.0001]:
                                         for LR in [0.0005, 0.0004]:
                                             for EMB_SIZE in [30, 45, 60]:
