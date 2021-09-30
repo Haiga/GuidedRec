@@ -11,7 +11,7 @@ if __name__ == '__main__':
         all_lists = []
         for LOSSFUN in ["neural_sort_cross_entropy_loss", "gumbel_approx_ndcg_loss", "pairwise_logistic_loss", "list_mle_loss"]:
         # for LOSSFUN in ["NeuralSortCrossEntropyLossLocal", "GumbelApproxNDCGLossLocal","PairwiseLogisticLossLocal"]:
-            for num_baseline_dropouts in [1, 3, 5, 10]:
+            for num_baseline_dropouts in [1, 3, 5, 10]:#music at 115 (rodou 16) falta os de list_mle_loss
                 for local_losfun in [""]:
                     for add_l2_reg_on_risk in [True]:
                         for add_loss_on_risk in [True]:
