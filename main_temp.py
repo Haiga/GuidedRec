@@ -7,7 +7,7 @@ from tfrankmain_multipledrop_risk_temp import LocalEval
 if __name__ == '__main__':
     # # executor = ThreadPoolExecutor(max_workers=2)
     def run():
-        id = 4400
+        id = 5400
         all_lists = []
         for LOSSFUN in ["neural_sort_cross_entropy_loss", "gumbel_approx_ndcg_loss", "pairwise_logistic_loss", "list_mle_loss"]:
         # for LOSSFUN in ["NeuralSortCrossEntropyLossLocal", "GumbelApproxNDCGLossLocal","PairwiseLogisticLossLocal"]:
@@ -29,14 +29,14 @@ if __name__ == '__main__':
                                                     list_of_args = [num_baseline_dropouts, local_losfun, add_l2_reg_on_risk,
                                                                     add_loss_on_risk,
                                                                     alpha_risk,
-                                                                    do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, LOSSFUN, drop_rate, 20, id]
+                                                                    do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, LOSSFUN, drop_rate, 45, id]
                                                     all_lists.append(list_of_args)
                                                     id += 1
 
                                                 list_of_args = [num_baseline_dropouts, local_losfun, add_l2_reg_on_risk,
                                                                 add_loss_on_risk,
                                                                 alpha_risk,
-                                                                do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, LOSSFUN, drop_rate, 20, id]
+                                                                do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, LOSSFUN, drop_rate, 45, id]
                                                 all_lists.append(list_of_args)
                                                 id += 1
                                                 # LocalEval(all_lists)
@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
 
     all_lists = run()
-    with multiprocessing.Pool(processes=4) as pool:
+    with multiprocessing.Pool(processes=3) as pool:
         # a = executor.submit(LocalEval, list_of_args)
         results = pool.map(LocalEval, all_lists)
         for r in results:
