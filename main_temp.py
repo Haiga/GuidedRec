@@ -7,7 +7,7 @@ from tfrankmain_multipledrop_risk_temp import LocalEval
 if __name__ == '__main__':
     # # executor = ThreadPoolExecutor(max_workers=2)
     def run():
-        id = 5400
+        id = 7400
         all_lists = []
         for LOSSFUN in ["neural_sort_cross_entropy_loss", "gumbel_approx_ndcg_loss", "pairwise_logistic_loss", "list_mle_loss"]:
         # for LOSSFUN in ["NeuralSortCrossEntropyLossLocal", "GumbelApproxNDCGLossLocal","PairwiseLogisticLossLocal"]:
@@ -21,7 +21,7 @@ if __name__ == '__main__':
                                         for dataset in ["ml1m"]:
                                             # for dataset in ["ml100k"]:
                                         # for dataset in ["ml100k"]:
-                                            for LR in [0.0004]:
+                                            for LR in [0.0005]:
                                                 drop_rate = 0.1
                                                 if num_baseline_dropouts == 1:
                                                     drop_rate = 0
