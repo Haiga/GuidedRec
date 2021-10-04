@@ -6,24 +6,24 @@ from tfrankmain_multipledrop_risk_tune import LocalEval
 if __name__ == '__main__':
     # executor = ThreadPoolExecutor(max_workers=2)
     def run():
-        id = 998666
+        id = 336000
         all_lists = []
-        LOSSFUN = ""
-        for num_baseline_dropouts in [2]:
-            for local_losfun in ["GumbelApproxNDCGLossLocal"]:
+        LOSSFUN = "neural_sort_cross_entropy_loss"
+        for num_baseline_dropouts in [5]:
+            for local_losfun in [""]:
                 for add_l2_reg_on_risk in [True]:
                     for add_loss_on_risk in [True]:
-                        for alpha_risk in [2, 5]:
+                        for alpha_risk in [2]:
                             for do_diff_to_ideal_risk in [True]:
                                 for eval_ideal_risk in [True]:
                                     # for dataset in ["ml100k", "ml1m"]:
                                     # for dataset in ["ml100k"]:
-                                    for dataset in ["ml1m"]:
+                                    for dataset in ["music"]:
                                         # for LR in [0.01, 0.0001]:
-                                        for LR in [0.0005, 0.0004]:
+                                        for LR in [0.0005, 0.0001]:
                                             for EMB_SIZE in [30, 45, 60]:
-                                                for drop_rate in [0.2, 0.01]:
-                                                    for REG in [0.1, 1]:
+                                                for drop_rate in [0.01]:
+                                                    for REG in [1]:
                                                         list_of_args = [num_baseline_dropouts, local_losfun, add_l2_reg_on_risk,
                                                                         add_loss_on_risk,
                                                                         alpha_risk,
