@@ -38,7 +38,7 @@ if __name__ == '__main__':
                                                     list_of_args = [num_baseline_dropouts, local_losfun, add_l2_reg_on_risk,
                                                                     add_loss_on_risk,
                                                                     alpha_risk,
-                                                                    do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, LOSSFUN, drop_rate, 45, id]
+                                                                    do_diff_to_ideal_risk, eval_ideal_risk, dataset, LR, LOSSFUN, drop_rate, EMB, id]
                                                     all_lists.append(list_of_args)
                                                     id += 1
                                                     # LocalEval(all_lists)
