@@ -1,7 +1,7 @@
 # from concurrent.futures.thread import ThreadPoolExecutor
 import multiprocessing
 
-from guided_rec_parametrized_ml1m import RunGuidedRecParametrized
+from guided_rec_parametrized_ml1m1 import RunGuidedRecParametrized
 
 if __name__ == '__main__':
     # executor = ThreadPoolExecutor(max_workers=2)

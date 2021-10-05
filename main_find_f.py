@@ -2,7 +2,7 @@
 import multiprocessing
 
 # from tfrankmain_multipledrop_risk import LocalEval
-from tfrankmain_multipledrop_risk_temp import LocalEval
+from tfrankmain_multipledrop_risk_temp_ret import LocalEval
 
 if __name__ == '__main__':
     # # executor = ThreadPoolExecutor(max_workers=2)
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
 
     all_lists = run()
-    with multiprocessing.Pool(processes=4) as pool:
+    with multiprocessing.Pool(processes=2) as pool:
         # a = executor.submit(LocalEval, list_of_args)
         results = pool.map(LocalEval, all_lists)
         for r in results:
@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
 
     all_lists = run2()
-    with multiprocessing.Pool(processes=4) as pool:
+    with multiprocessing.Pool(processes=2) as pool:
         # a = executor.submit(LocalEval, list_of_args)
         results = pool.map(LocalEval, all_lists)
         for r in results:
