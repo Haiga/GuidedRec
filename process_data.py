@@ -101,7 +101,7 @@ def data_preparation(ratings_file, ouput_path, sep="\t"):
 if __name__ == '__main__':
     print("Starting")
     # for dataset in ['ml100k', 'ml1m']:
-    for dataset in ['music']:
+    for dataset in ['aiv']:
         outdir = f'prepared_data/{dataset}/'
         if not os.path.isdir(outdir):
             os.makedirs(outdir)

@@ -46,7 +46,7 @@ def data_preparation(ratings_file, output_file, sep="\t"):
 if __name__ == '__main__':
     print("Starting")
     # for dataset in ['ml100k', 'ml1m']:
-    for dataset in ['amazon2']:
+    for dataset in ['aiv']:
 
         s = time.time()
         # data_preparation(f'src/Data/{dataset}/u.data', outdir)
