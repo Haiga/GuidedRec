@@ -8,7 +8,7 @@ if __name__ == '__main__':
 
 
     def run2():
-        id = 74000
+        id = 74400
         all_lists = []
         for LOSSFUN in [""]:
             # for LOSSFUN in ["NeuralSortCrossEntropyLossLocal", "GumbelApproxNDCGLossLocal","PairwiseLogisticLossLocal"]:
@@ -22,7 +22,7 @@ if __name__ == '__main__':
                                         for dataset in ["aiv"]:
                                             # for dataset in ["ml100k"]:
                                             # for dataset in ["ml100k"]:
-                                            for LR in [0.0004, 0.0005]:
+                                            for LR in [0.0004, 0.0005, 0.00005]:
                                                 drop_rate = 0.05
 
                                                 list_of_args = [num_baseline_dropouts, local_losfun, add_l2_reg_on_risk,

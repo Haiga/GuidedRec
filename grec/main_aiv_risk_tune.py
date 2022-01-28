@@ -7,8 +7,8 @@ if __name__ == '__main__':
     # executor = ThreadPoolExecutor(max_workers=2)
     def run2():
         base_args = []
-        id = 77010
-        for num_baseline_dropouts in [1, 5]:
+        id = 78010
+        for num_baseline_dropouts in [1, 3, 5, 10]:
             if num_baseline_dropouts == 1:
                 list_of_args = [0,
                                 num_baseline_dropouts,
@@ -56,11 +56,11 @@ if __name__ == '__main__':
 
     def run():
         base_args = []
-        id = 77070
+        id = 78070
 
         for num_baseline_dropouts in [2, 5]:
             for alpha_risk in [2, 5]:
-                for LR_LOGLOSS in [0.0005, 0.0001]:
+                for LR_LOGLOSS in [0.0005, 0.0001, 0.00006]:
                     for local_losfun in ["NeuralSortCrossEntropyLossLocal", "GumbelApproxNDCGLossLocal"]:
 
                         list_of_args = [0.05,

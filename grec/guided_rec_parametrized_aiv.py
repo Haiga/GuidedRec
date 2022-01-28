@@ -61,7 +61,7 @@ def RunGuidedRecParametrized(list_of_args):
     ITEM_NUM = 1682
     DIM = 50
     # EPOCH_MAX = 450
-    EPOCH_MAX = 60
+    EPOCH_MAX = 100
     # DEVICE = "/gpu:0"
     DEVICE = "/cpu:0"
     PERC = 0.9
